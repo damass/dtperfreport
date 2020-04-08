@@ -12,11 +12,11 @@
 			color : #fff
 		}
 		
-		#loadingSection.hide, #mainSection.hide, #hostMetricsLabel.hide, #processMetricsLabel.hide, #serviceMetricsLabel.hide, #hostMetricsSection.hide, #processMetricsSection.hide, #serviceMetricsSection.hide, #timeSection.hide, #reportSection.hide, #chartButton.hide, #tableButton.hide, #leftTable.hide, #rightChart.hide{
+		#loadingSection.hide, #mainSection.hide, #hostMetricsLabel.hide, #processMetricsLabel.hide, #serviceMetricsLabel.hide, #hostMetricsSection.hide, #processMetricsSection.hide, #serviceMetricsSection.hide, #timeSection.hide, #reportSection.hide, #chartButton.hide, #tableButton.hide, #leftTable.hide, #rightChart.hide, #reportRunningSection.hide{
 			display: none;
 		}
 		
-		#loadingSection.show, #mainSection.show, #hostMetricsLabel.show, #processMetricsLabel.show, #serviceMetricsLabel.show, #hostMetricsSection.show, #processMetricsSection.show, #serviceMetricsSection.show, #timeSection.show, #reportSection.show, #chartButton.show, #tableButton.show, #leftTable.show, #rightChart.show{
+		#loadingSection.show, #mainSection.show, #hostMetricsLabel.show, #processMetricsLabel.show, #serviceMetricsLabel.show, #hostMetricsSection.show, #processMetricsSection.show, #serviceMetricsSection.show, #timeSection.show, #reportSection.show, #chartButton.show, #tableButton.show, #leftTable.show, #rightChart.show, #reportRunningSection.show{
 			display: block;
 		}			
 	</style>
@@ -293,7 +293,6 @@
 			</table>
 		</div>	
 		</br></br>
-
 		<div id="reportSection" class="hide">
 			<table>
 				<tr>
@@ -341,7 +340,7 @@
 		var validEndSecond = false
 
 		var validTime = false
-		var allEntityIDNameArr = [] 
+		var allEntityIDNameArr = [] //used to capture all Entity ID & Names to create URLs for Report Info Section
 		
 
 		//start entity id or entity tag input validation 
@@ -723,7 +722,7 @@
 		$('#runReportButton').click(function() {
 			if (validTime == true && (collectHostMetrics == true || collectProcessMetrics == true || collectServiceMetrics == true)) {
 				console.log("Starting Report Run ...")
-				
+								
 				var dvHostTable = document.getElementById("hostMetrics");
 				var dvProcessTable = document.getElementById("processMetrics");
 				var dvServiceTable = document.getElementById("serviceMetrics");
@@ -1051,7 +1050,7 @@
 						reportDiv = document.getElementById("rightChart")
 						reportDiv.innerHTML = reportDiv.innerHTML + "<div id=\"" + chartID + "\"></div>"
 						chartURI = drawChart(chartID,chartName,chartData);
-						window.open(chartURI)
+						//window.open(chartURI)
 						
 						
 						tblRow = table.insertRow(-1)

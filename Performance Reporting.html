@@ -12,18 +12,27 @@
 			color : #fff
 		}
 		
-		#hostMetricsLabel.hide, #processMetricsLabel.hide, #serviceMetricsLabel.hide, #hostMetricsSection.hide, #processMetricsSection.hide, #serviceMetricsSection.hide, #timeSection.hide, #reportSection.hide {
+		#loadingSection.hide, #mainSection.hide, #hostMetricsLabel.hide, #processMetricsLabel.hide, #serviceMetricsLabel.hide, #hostMetricsSection.hide, #processMetricsSection.hide, #serviceMetricsSection.hide, #timeSection.hide, #reportSection.hide, #chartButton.hide, #tableButton.hide, #leftTable.hide, #rightChart.hide{
 			display: none;
 		}
 		
-		#hostMetricsLabel.show, #processMetricsLabel.show, #serviceMetricsLabel.show, #hostMetricsSection.show, #processMetricsSection.show, #serviceMetricsSection.show, #timeSection.show, #reportSection.show {
+		#loadingSection.show, #mainSection.show, #hostMetricsLabel.show, #processMetricsLabel.show, #serviceMetricsLabel.show, #hostMetricsSection.show, #processMetricsSection.show, #serviceMetricsSection.show, #timeSection.show, #reportSection.show, #chartButton.show, #tableButton.show, #leftTable.show, #rightChart.show{
 			display: block;
 		}			
 	</style>
 	<head>
 		<title>Performance Reporting Tool - v1 Timeseries</title>
 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+		<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
 		<script>
+			google.charts.load("current", {packages:['line','corechart','table']});
+			google.charts.setOnLoadCallback(showPage);
+			
+			function showPage() {
+				document.getElementById("loadingSection").setAttribute("class","hide");
+				document.getElementById("mainSection").setAttribute("class","show");
+			}
+			
 			var tablesToExcel = (function() {
 			var uri = 'data:application/vnd.ms-excel;base64,'
 				, tmplWorkbookXML = '<?xml version="1.0"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">'
@@ -80,7 +89,46 @@
 				document.body.removeChild(link);
 			}
 			})();
+
+			function drawChart(chartID,chartTitle,data) {
+				var options = {
+					title : chartTitle,
+					width: '85%',
+					height: 500,
+					backgroundColor: '#2d2d2d',
+					aggregationTarget: 'category',
+					focusTarget: 'datum',
+					tooltip: {trigger: 'none'},
+					enableInteractivity: 'false',
+					hAxis: {textStyle: {color : 'white'}},
+					vAxis: {textStyle: {color : 'white'}},
+					titleTextStyle: {color : 'white'},
+					legend: { position: 'top',
+							 textStyle: {color : 'white'}
+							},
+					series: {
+						0: { color: '#4285F4' }
+					}
+				};		
+				var chart = new google.visualization.LineChart(document.getElementById(chartID));
+				chart.draw(data,options);	
+				return chart.getImageURI();
+			}
+			
+			function showTable() {
+				document.getElementById("tableButton").setAttribute("class","hide");
+				document.getElementById("chartButton").setAttribute("class","show");
+				document.getElementById("leftTable").setAttribute("class","show");
+				document.getElementById("rightChart").setAttribute("class","hide");
+			}
+			function showChart() {
+				document.getElementById("tableButton").setAttribute("class","show");
+				document.getElementById("chartButton").setAttribute("class","hide");				
+				document.getElementById("leftTable").setAttribute("class","hide");
+				document.getElementById("rightChart").setAttribute("class","show");
+			}		
 		</script>
+		
 	</head>
 	<body>
 		<table>
@@ -91,30 +139,35 @@
 			<tr><center><pre style='font-weight: bold;'>Then select which Entity IDs or Tags to capture and the metrics. Enter the time and click validate time then "Run Report"</pre></center></tr>
 		</table>
 		</br>
-		<table><tr><td><pre>Input your Dynatrace Environment URL:
-		Managed:    https://{your-domain}/e/{your-environment-id}
-		SaaS:       https://{your-environment-id}.live.dynatrace.com</pre></td></tr>
-		</table>
-		<br>
-		<table>
-			<tr>
-				<td><pre>Dynatrace Environment URL: <input type="text" id="dynatraceURL" size='89'></pre></td>
-			</tr>
-			<tr>
-				<td><pre>API Token                : <input type="text" id="dynatraceToken" size='89'></pre></td>
-			</tr>
-		</table>
-		<table>
-			<tr>
-				<td><pre><input type="checkbox" id="showHostMetricsSection"><label>Collect Data for Hosts </label></pre></td>
-			</tr>
-			<tr>
-				<td><pre><input type="checkbox" id="showProcessMetricsSection"><label>Collect Data for Processes	</label></pre></td>
-			</tr>
-			<tr>
-				<td><pre><input type="checkbox" id="showServiceMetricsSection"><label>Collect Data for Services	</label></pre></td>
-			</tr>
-		</table>
+		<div id="loadingSection" class="show">
+			<h1><center>Loading...</center></h1>
+		</div>
+		<div id="mainSection" class="hide">
+			<table><tr><td><pre>Input your Dynatrace Environment URL:
+			Managed:    https://{your-domain}/e/{your-environment-id}
+			SaaS:       https://{your-environment-id}.live.dynatrace.com</pre></td></tr>
+			</table>
+			<br>
+			<table>
+				<tr>
+					<td><pre>Dynatrace Environment URL: <input type="text" id="dynatraceURL" size='89'></pre></td>
+				</tr>
+				<tr>
+					<td><pre>API Token                : <input type="text" id="dynatraceToken" size='89'></pre></td>
+				</tr>
+			</table>
+			<table>
+				<tr>
+					<td><pre><input type="checkbox" id="showHostMetricsSection"><label>Collect Data for Hosts </label></pre></td>
+				</tr>
+				<tr>
+					<td><pre><input type="checkbox" id="showProcessMetricsSection"><label>Collect Data for Processes	</label></pre></td>
+				</tr>
+				<tr>
+					<td><pre><input type="checkbox" id="showServiceMetricsSection"><label>Collect Data for Services	</label></pre></td>
+				</tr>
+			</table>
+		</div>
 		<hr>
 		<div id="hostMetricsSection" class="hide" style='background-color:#1396FE;'>
 			<table>
@@ -246,11 +299,13 @@
 				<tr>
 					<td><button id="runReportButton" type="submit">Run Report</button></td>
 					<td id="downloadButton"></td>
+					<td id="chartButton" class="hide"><button onclick="showChart()">Show Chart</button></td>
+					<td id="tableButton" class="hide"><button onclick="showTable()">Show Table</button></td>
 				</tr>
 			</table> 
 			<div id="reportTimingInfo"></div>
 			<hr>
-			<div id="leftTable" style="float:left; width:50%;overflow: auto;">
+			<div id="leftTable" class="hide">
 				<h3 id="hostMetricsLabel"><pre>Host Metrics</pre></h3>
 				<div id="hostMetrics"></div>
 				<h3 id="processMetricsLabel"><pre>Process Metrics</pre></h3>
@@ -258,8 +313,7 @@
 				<h3 id="serviceMetricsLabel"><pre>Service Metrics</pre></h3>
 				<div id="serviceMetrics"></div>
 			</div>
-			<div id="rightChart" style="float:left; width:50%;overflow: auto; display:none;">
-				<img src="https://dt-cdn.net/images/dynatrace-logo-rgb-cnh-800x142px-8ad53ac283.svg">
+			<div id="rightChart">
 			</div>
 		</div>
 	</body> 
@@ -673,6 +727,7 @@
 				var dvHostTable = document.getElementById("hostMetrics");
 				var dvProcessTable = document.getElementById("processMetrics");
 				var dvServiceTable = document.getElementById("serviceMetrics");
+				var dvReportSection = document.getElementById("rightChart");
 
 				var hostMetricsLabel = document.getElementById("hostMetricsLabel");	
 				var processMetricsLabel = document.getElementById("processMetricsLabel");
@@ -680,7 +735,8 @@
 				
 				dvHostTable.innerHTML = ""
 				dvProcessTable.innerHTML = ""
-				dvServiceTable.innerHTML = ""	
+				dvServiceTable.innerHTML = ""
+				dvReportSection.innerHTML = ""
 
 				hostMetricsLabel.setAttribute("class","hide");
 				processMetricsLabel.setAttribute("class","hide");
@@ -716,25 +772,26 @@
 				if (timeDelta > 0 && timeDelta <= 14342400000) {
 					
 					if (collectHostMetrics == true) {
-						hostMetricsList = findHostMetrics();
-						hostMetricsLabel.setAttribute("class","show");
-						gatherHostMetrics(inputURLValue,inputTokenValue,inputHostIDValue,inputHostTagValue,startTimeUTC,endTimeUTC,hostMetricsList)
+						hostMetricsList = findMetrics("host");
+						//hostMetricsLabel.setAttribute("class","show");
+						gatherMetrics("host",inputURLValue,inputTokenValue,inputHostIDValue,inputHostTagValue,startTimeUTC,endTimeUTC,hostMetricsList)
 					}
 					
 					if (collectProcessMetrics == true) {
-						processMetricsList = findProcessMetrics();
-						processMetricsLabel.setAttribute("class","show");
-						gatherProcessMetrics(inputURLValue,inputTokenValue,inputProcessIDValue,inputProcessTagValue,startTimeUTC,endTimeUTC,processMetricsList)
+						processMetricsList = findMetrics("process");
+						//processMetricsLabel.setAttribute("class","show");
+						gatherMetrics("process",inputURLValue,inputTokenValue,inputProcessIDValue,inputProcessTagValue,startTimeUTC,endTimeUTC,processMetricsList)
 					}
  
 					if (collectServiceMetrics == true) {
-						serviceMetricsList = findServiceMetrics();
-						serviceMetricsLabel.setAttribute("class","show");
-						gatherServiceMetrics(inputURLValue,inputTokenValue,inputServiceIDValue,inputServiceTagValue,startTimeUTC,endTimeUTC,serviceMetricsList)
+						serviceMetricsList = findMetrics("service");
+						//serviceMetricsLabel.setAttribute("class","show");
+						gatherMetrics("service",inputURLValue,inputTokenValue,inputServiceIDValue,inputServiceTagValue,startTimeUTC,endTimeUTC,serviceMetricsList)
 					}
 
 					createReportInfo(inputURLValue,localDateTimeStart,startTimeUTC,localDateTimeEnd,endTimeUTC)
 					createExcelButton(collectHostMetrics,hostMetricsList,collectProcessMetrics,processMetricsList,collectServiceMetrics,serviceMetricsList)
+					document.getElementById("tableButton").setAttribute("class","show");
 				}
 				else {
 					alert("Time Frame Not Right, Try Again by Refreshing the Page")
@@ -780,451 +837,55 @@
 		}
 		
 		// Find Entity Metrics that were selected 
-		function findHostMetrics() {
-			var hostMetricsList = [];
+		function findMetrics(entityType) {
+			var metricsList = [];
 			
-			$('#hostMetricList tr').each(function(){
+			metricListName = "#" + entityType + "MetricList tr"
+						
+			$(metricListName).each(function(){
 				$(this).find('td pre input').each(function(){
 					if($(this).is(":checked") == true){
-						hostMetricsList.push($(this).val())
+						metricsList.push($(this).val())
 					}
 				})
 			});
-		
-			return hostMetricsList;
-		}
-		
-		function findProcessMetrics() {
-			var processMetricsList = [];
-			
-			$('#processMetricList tr').each(function(){
-				$(this).find('td pre input').each(function(){
-					if($(this).is(":checked") == true){
-						processMetricsList.push($(this).val())
-					}
-				})
-			});
-		
-			return processMetricsList;			
-		}
-
-		function findServiceMetrics() {
-			var serviceMetricsList = [];
-			
-			$('#serviceMetricList tr').each(function(){
-				$(this).find('td pre input').each(function(){
-					if($(this).is(":checked") == true){
-						serviceMetricsList.push($(this).val())
-					}
-				})
-			});
-		
-			return serviceMetricsList;			
-		
+			return metricsList;			
 		}
 
 		//Gather Metrics & Build out HTML tables for different Entity Types 
-		function gatherHostMetrics(dynatraceURL,token,hostID,hostTag,startTime,endTime,hostMetricsList) {
-			console.log("Gathering Host Metrics...")
-			for (metricIDNum in hostMetricsList) {
-				var dynatraceMetricID = hostMetricsList[metricIDNum]
+		function gatherMetrics(entityType,dynatraceURL,token,entityTypeID,entityTypeTag,startTime,endTime,entityTypeMetricsList) {
+			console.log("Gathering " + entityType + " metrics ...")
+			for (metricIDNum in entityTypeMetricsList) {
+				var dynatraceMetricID = entityTypeMetricsList[metricIDNum]
 				
 				var entityKeys = []
 				var dtURL = ""
 				
-				if (hostID != "") {
+				if (entityTypeID != "") {
 					var entityList = ""
-					hostIDList = hostID.split(",")
+					entityTypeIDList = entityTypeID.split(",")
 				
-					if (hostIDList.length > 1) {
-						for (i in hostIDList){
-							entityList += "&entity=" + hostIDList[i].trim()
+					if (entityTypeIDList.length > 1) {
+						for (i in entityTypeIDList){
+							entityList += "&entity=" + entityTypeIDList[i].trim()
 						}
 					}
 					else {
-						entityList += "&entity=" + hostID
+						entityList += "&entity=" + entityTypeID
 					}
 					dtURL += dynatraceURL + "/api/v1/timeseries/" + dynatraceMetricID + "?startTimestamp=" + startTime + "&endTimestamp=" + endTime + entityList + "&includeData=true"
 				}
-				else if (hostTag != "") {
+				else if (entityTypeTag != "") {
 					var tagList = ""
-					hostTagList = hostTag.split(",")
+					entityTypeTagList = entityTypeTag.split(",")
 				
-					if (hostTagList.length > 1) {
-						for (i in hostTagList){
-							tagList += "&tag=" + hostTagList[i].trim()
+					if (entityTypeTagList.length > 1) {
+						for (i in entityTypeTagList){
+							tagList += "&tag=" + entityTypeTagList[i].trim()
 						}
 					}
 					else {
-						tagList += "&tag=" + hostTag
-					}
-					dtURL += dynatraceURL + "/api/v1/timeseries/" + dynatraceMetricID + "?startTimestamp=" + startTime + "&endTimestamp=" + endTime + tagList + "&includeData=true"
-				}			
-				else {
-				dtURL += dynatraceURL + "/api/v1/timeseries/" + dynatraceMetricID + "?startTimestamp=" + startTime + "&endTimestamp=" + endTime + "&includeData=true"
-				}
-				
-				var metricAgg = dynatraceMetricID + "Agg"
-				var aggregationSelection = document.getElementById(metricAgg);
-				var aggregationSelectionVal = aggregationSelection.value;
-				console.log(dynatraceMetricID +" : "+ aggregationSelectionVal)
-				
-				if(aggregationSelectionVal != "") {
-					dtURL += "&aggregationType="+aggregationSelectionVal
-				}
-				else {
-					dtURL += "&aggregationType=AVG"
-				}
-				
-				var settings = {
-				"async": false,
-				"crossDomain": true,
-				"url": dtURL,
-				"method": "GET",
-				"headers": {
-					"Authorization": "Api-Token " + token,
-					"Content-Type": "application/json",
-				},
-				"processData": false,
-				"data": ""
-				}
-				
-				var request = $.ajax(settings);
-				request.done(function (response) {
-					
-					var hostResponse = response['dataResult']['dataPoints'];
-					var hostName = ""
-					var unit = response['dataResult']['unit']
-					var displayName = response['displayName']
-					var aggregation = response['dataResult']['aggregationType'];
-					var allEntities = response['dataResult']['entities']
-					
-					// to gather all Entity IDs & Names for Report Info
-					for (keys in allEntities) {
-						keyID = keys.toString();
-						valueName = allEntities[keys]
-						allEntityIDNameArr.push([keyID,valueName])
-					}
-					
-					for (keys in hostResponse) {
-						var keyString = keys.toString();
-						entityKeys.push(keyString);
-					}
-					console.log("All Host Entity Keys : " + entityKeys)
-					
-					var table = document.createElement("table")
-					table.border = "1";
-					table.id = dynatraceMetricID ;
-					
-					var tblColumnCount = 2 
-					var tblRow = table.insertRow(-1)
-					
-					for (var x = 0; x < entityKeys.length; x++) {
-					
-						var entity = entityKeys[x]
-					
-						splitEntities = entity.split(', ');
-						hostNameID = splitEntities[0]
-						hostName = response['dataResult']['entities'][hostNameID]
-					
-						var headerCell1 = document.createElement("TH");
-						
-						if (typeof aggregation !== 'undefined') {
-							if(splitEntities.length > 1) {
-								var secondEntityID = splitEntities[1]
-								var secondEntityName = response['dataResult']['entities'][secondEntityID]
-								headerCell1.innerHTML = "<pre>" + hostName + " - " + secondEntityName + " : " + displayName + " : " + aggregation + "</pre>";
-							}
-							else {
-								headerCell1.innerHTML = "<pre>" + hostName + " : " + displayName + " : " + aggregation + "</pre>";
-							}
-						}
-						else {
-							if(splitEntities.length > 1) {
-								var secondEntityID = splitEntities[1]
-								var secondEntityName = response['dataResult']['entities'][secondEntityID]
-								headerCell1.innerHTML = "<pre>" + hostName + " - " + secondEntityName + " : " + displayName + "</pre>";
-							}
-							else {
-								headerCell1.innerHTML = "<pre>" + hostName + " : " + displayName + "</pre>";
-							}
-						}
-						tblRow.appendChild(headerCell1);
-						var headerCell2 = document.createElement("TH");
-						headerCell2.innerHTML = "";
-						tblRow.appendChild(headerCell2);
-						
-						tblRow = table.insertRow(-1)
-	
-						var headerCell3 = document.createElement("TH");
-						headerCell3.innerHTML = "<pre>Time</pre>"
-						tblRow.appendChild(headerCell3);
-						var headerCell4 = document.createElement("TH");
-						headerCell4.innerHTML = "<pre>" + unit + "</pre>";
-						tblRow.appendChild(headerCell4);
-						
-						
-						for (i in hostResponse[entity]) {
-							tblRow = table.insertRow(-1)
-							
-							var dateTimeUTC = new Date(hostResponse[entity][i][0]);
-							var localDateTime = dateTimeUTC.toLocaleString();
-						
-							var cell1 = tblRow.insertCell(-1);
-							cell1.innerHTML = "<center><pre>" + localDateTime + "</pre></center>"
-							
-							var cell2 = tblRow.insertCell(-1);
-							if (hostResponse[entity][i][1] != null) {
-								cell2.setAttribute("data-type","Number");
-								cell2.setAttribute("data-value",hostResponse[entity][i][1]);
-								cell2.innerHTML = "<pre>" + hostResponse[entity][i][1] + "</pre>"
-							}
-							else {
-								cell2.setAttribute("data-type","String");
-								cell2.setAttribute("data-value","null");
-								cell2.innerHTML = "<pre>" + "null" + "</pre>"
-							}
-						}
-						tblRow = table.insertRow(-1)
-						var cell1 = tblRow.insertCell(-1);
-						cell1.innerHTML = " "
-						var cell2 = tblRow.insertCell(-1);
-						cell2.innerHTML = " "
-						tblRow = table.insertRow(-1)							
-					}
-					
-					dvTable = document.getElementById("hostMetrics");
-					dvTable.appendChild(table);
-					dvTable.innerHTML = dvTable.innerHTML + "</br>"
-					entityKeys = []
-				});
-				
-				request.fail(function (response, textStatus) {
-					dvTable = document.getElementById("hostMetrics");
-					dvTable.innerHTML = dvTable.innerHTML + "<p><pre>Request Failed: " + textStatus + "</pre></p>"
-				
-				});
-				
-			}
-		}
-
-		function gatherProcessMetrics(dynatraceURL,token,processID,processTag,startTime,endTime,processMetricsList) {
-			console.log("Gathering Process Metrics ...")
-			for (metricIDNum in processMetricsList) {
-				var dynatraceMetricID = processMetricsList[metricIDNum]
-				
-				var entityKeys = []
-				var dtURL = ""
-				
-				if (processID != "") {
-					var entityList = ""
-					processIDList = processID.split(",")
-				
-					if (processIDList.length > 1) {
-						for (i in processIDList){
-							entityList += "&entity=" + processIDList[i].trim()
-						}
-					}
-					else {
-						entityList += "&entity=" + processID
-					}
-					dtURL += dynatraceURL + "/api/v1/timeseries/" + dynatraceMetricID + "?startTimestamp=" + startTime + "&endTimestamp=" + endTime + entityList + "&includeData=true"
-				}
-				else if (processTag != "") {
-					var tagList = ""
-					processTagList = processTag.split(",")
-				
-					if (processTagList.length > 1) {
-						for (i in processTagList){
-							tagList += "&tag=" + processTagList[i].trim()
-						}
-					}
-					else {
-						tagList += "&tag=" + processTag
-					}
-					dtURL += dynatraceURL + "/api/v1/timeseries/" + dynatraceMetricID + "?startTimestamp=" + startTime + "&endTimestamp=" + endTime + tagList + "&includeData=true"
-				}			
-				else {
-				dtURL += dynatraceURL + "/api/v1/timeseries/" + dynatraceMetricID + "?startTimestamp=" + startTime + "&endTimestamp=" + endTime + "&includeData=true"
-				}
-				
-				var metricAgg = dynatraceMetricID + "Agg"
-				var aggregationSelection = document.getElementById(metricAgg);
-				var aggregationSelectionVal = aggregationSelection.value;
-				console.log(dynatraceMetricID +" : "+ aggregationSelectionVal)
-				
-				if(aggregationSelectionVal != "") {
-					dtURL += "&aggregationType="+aggregationSelectionVal
-				}
-				else {
-					dtURL += "&aggregationType=AVG"
-				}
-				
-				var settings = {
-				"async": false,
-				"crossDomain": true,
-				"url": dtURL, 
-				"method": "GET",
-				"headers": {
-					"Authorization": "Api-Token " + token,
-					"Content-Type": "application/json",
-				},
-				"processData": false,
-				"data": ""
-				}
-				
-				var request = $.ajax(settings);
-				request.done(function (response) {
-					
-					var processResponse = response['dataResult']['dataPoints'];
-					var processName = ""
-					var unit = response['dataResult']['unit']
-					var displayName = response['displayName']
-					var aggregation = response['dataResult']['aggregationType'];
-					var allEntities = response['dataResult']['entities']
-					
-					// to gather all Entity IDs & Names for Report Info
-					for (keys in allEntities) {
-						keyID = keys.toString();
-						valueName = allEntities[keys]
-						allEntityIDNameArr.push([keyID,valueName])
-					}
-					
-					for (keys in processResponse) {
-						var keyString = keys.toString();
-						entityKeys.push(keyString);
-					}
-					console.log("All Process Entity Keys : " + entityKeys)
-					
-					var table = document.createElement("table")
-					table.border = "1";
-					table.id = dynatraceMetricID
-
-					var tblColumnCount = 2 
-					var tblRow = table.insertRow(-1)
-					
-					for (var x = 0; x < entityKeys.length; x++) {
-					
-						var entity = entityKeys[x]
-					
-						splitEntities = entity.split(', ');
-						processNameID = splitEntities[0]	
-						processName = response['dataResult']['entities'][processNameID]
-					
-						var headerCell1 = document.createElement("TH");
-						if (typeof aggregation !== 'undefined') {
-							if(splitEntities.length > 1) {
-								var secondEntityID = splitEntities[1]
-								var secondEntityName = response['dataResult']['entities'][secondEntityID]
-								headerCell1.innerHTML = "<pre>" + processName + " - " + secondEntityName + " : " + displayName + " : " + aggregation + "</pre>";
-							}
-							else {
-								headerCell1.innerHTML = "<pre>" + processName + " : " + displayName + " : " + aggregation + "</pre>";
-							}
-						}
-						else {
-							if(splitEntities.length > 1) {
-								var secondEntityID = splitEntities[1]
-								var secondEntityName = response['dataResult']['entities'][secondEntityID]
-								headerCell1.innerHTML = "<pre>" + processName + " - " + secondEntityName + " : " + displayName + "</pre>";
-							}
-							else {
-								headerCell1.innerHTML = "<pre>" + processName + " : " + displayName + "</pre>";
-							}
-						}
-						tblRow.appendChild(headerCell1);
-						var headerCell2 = document.createElement("TH");
-						headerCell2.innerHTML = "";
-						tblRow.appendChild(headerCell2);
-						
-						tblRow = table.insertRow(-1)
-	
-						var headerCell3 = document.createElement("TH");
-						headerCell3.innerHTML = "<pre>Time</pre>"
-						tblRow.appendChild(headerCell3);
-						var headerCell4 = document.createElement("TH");
-						headerCell4.innerHTML = "<pre>" + unit + "</pre>";
-						tblRow.appendChild(headerCell4);
-						
-						
-						for (i in processResponse[entity]) {
-							tblRow = table.insertRow(-1)
-							
-							var dateTimeUTC = new Date(processResponse[entity][i][0]);
-							var localDateTime = dateTimeUTC.toLocaleString();
-						
-							var cell1 = tblRow.insertCell(-1);
-							cell1.innerHTML = "<center><pre>" + localDateTime + "</pre></center>"
-							
-							var cell2 = tblRow.insertCell(-1);
-							if (processResponse[entity][i][1] != null) {
-								cell2.setAttribute("data-type","Number");
-								cell2.setAttribute("data-value",processResponse[entity][i][1]);
-								cell2.innerHTML = "<pre>" + processResponse[entity][i][1] + "</pre>"
-							}
-							else {
-								cell2.setAttribute("data-type","String");
-								cell2.setAttribute("data-value","null");
-								cell2.innerHTML = "<pre>" + "null" + "</pre>"
-							}
-						}
-						tblRow = table.insertRow(-1)
-						var cell1 = tblRow.insertCell(-1);
-						cell1.innerHTML = " "
-						var cell2 = tblRow.insertCell(-1);
-						cell2.innerHTML = " "
-						tblRow = table.insertRow(-1)
-
-					}
-					
-					dvTable = document.getElementById("processMetrics");
-					dvTable.appendChild(table);
-					dvTable.innerHTML = dvTable.innerHTML + "</br>"
-					entityKeys = []
-				});
-				
-				request.fail(function (response, textStatus) {
-					dvTable = document.getElementById("processMetrics");
-					dvTable.innerHTML = dvTable.innerHTML + "<p><pre>Request Failed: " + textStatus + "</pre></p>"
-				
-				});
-				
-			}		
-		}
-
-		function gatherServiceMetrics(dynatraceURL,token,serviceID,serviceTag,startTime,endTime,serviceMetricsList) {
-			console.log("Gathering Service Metrics ...")
-			for (metricIDNum in serviceMetricsList) {
-				var dynatraceMetricID = serviceMetricsList[metricIDNum]
-				
-				var entityKeys = []
-				var dtURL = ""
-				
-				if (serviceID != "") {
-					var entityList = ""
-					serviceIDList = serviceID.split(",")
-				
-					if (serviceIDList.length > 1) {
-						for (i in serviceIDList){
-							entityList += "&entity=" + serviceIDList[i].trim()
-						}
-					}
-					else {
-						entityList += "&entity=" + serviceID
-					}
-					dtURL += dynatraceURL + "/api/v1/timeseries/" + dynatraceMetricID + "?startTimestamp=" + startTime + "&endTimestamp=" + endTime + entityList + "&includeData=true"
-				}
-				else if (serviceTag != "") {
-					var tagList = ""
-					serviceTagList = serviceTag.split(",")
-				
-					if (serviceTagList.length > 1) {
-						for (i in serviceTagList){
-							tagList += "&tag=" + serviceTagList[i].trim()
-						}
-					}
-					else {
-						tagList += "&tag=" + serviceTag
+						tagList += "&tag=" + entityTypeTag
 					}
 					dtURL += dynatraceURL + "/api/v1/timeseries/" + dynatraceMetricID + "?startTimestamp=" + startTime + "&endTimestamp=" + endTime + tagList + "&includeData=true"
 				}			
@@ -1233,17 +894,10 @@
 				}
 				
 				switch (dynatraceMetricID) {
-					case "com.dynatrace.builtin:service.responsetime" : 
-						var metricAgg = dynatraceMetricID + "Agg"
-						var aggregationSelection = document.getElementById(metricAgg);
-						var aggregationSelectionVal = aggregationSelection.value;
-						console.log(dynatraceMetricID +" : "+ aggregationSelectionVal)
-				
-						if(aggregationSelectionVal != "") {
-							dtURL += "&aggregationType="+aggregationSelectionVal
-						}
+					case "com.dynatrace.builtin:service.errorcounthttp4xx":
+					case "com.dynatrace.builtin:service.errorcounthttp5xx" : 
 						break;
-					case "com.dynatrace.builtin:service.requests" : 
+					default : 
 						var metricAgg = dynatraceMetricID + "Agg"
 						var aggregationSelection = document.getElementById(metricAgg);
 						var aggregationSelectionVal = aggregationSelection.value;
@@ -1271,25 +925,25 @@
 				var request = $.ajax(settings);
 				request.done(function (response) {
 					
-					var serviceResponse = response['dataResult']['dataPoints'];
-					var serviceName = ""
+					var apiResponse = response['dataResult']['dataPoints'];
+					var entityTypeName = ""
 					var unit = response['dataResult']['unit']
 					var displayName = response['displayName']
 					var aggregation = response['dataResult']['aggregationType'];
-					var allEntities = response['dataResult']['entities']
+					var allEntitiesInResponse = response['dataResult']['entities']
 					
 					// to gather all Entity IDs & Names for Report Info
-					for (keys in allEntities) {
+					for (keys in allEntitiesInResponse) {
 						keyID = keys.toString();
-						valueName = allEntities[keys]
+						valueName = allEntitiesInResponse[keys]
 						allEntityIDNameArr.push([keyID,valueName])
 					}
 					
-					for (keys in serviceResponse) {
+					for (keys in apiResponse) {
 						var keyString = keys.toString();
 						entityKeys.push(keyString);
 					}
-					console.log("All Service Entity Keys : " + entityKeys)
+					console.log("All Entity Keys : " + entityKeys)
 					
 					var table = document.createElement("table")
 					table.border = "1";
@@ -1299,32 +953,59 @@
 					var tblRow = table.insertRow(-1)
 					
 					for (var x = 0; x < entityKeys.length; x++) {
+
+						//set up new chartData DataTable for each entity 
+						var chartData = new google.visualization.DataTable();
+						chartData.addColumn('string', 'date');
+						chartData.addColumn('number', dynatraceMetricID);
 					
 						var entity = entityKeys[x]
 					
 						splitEntities = entity.split(', ');
-						serviceNameID = splitEntities[0]	
-						serviceName = response['dataResult']['entities'][serviceNameID]
+						entityTypeNameID = splitEntities[0]	
+						entityName = response['dataResult']['entities'][entityTypeNameID]
 					
 						var headerCell1 = document.createElement("TH");
 						if (typeof aggregation !== 'undefined') {
-							if(splitEntities.length > 1) {
-								var secondEntityID = splitEntities[1]
-								var secondEntityName = response['dataResult']['entities'][secondEntityID]
-								headerCell1.innerHTML = "<pre>" + serviceName + " - " + secondEntityName + " : " + displayName + " : " + aggregation + "</pre>";
+							if(splitEntities.length > 1 && firstCharIsCapital(splitEntities[1])) {
+								var secondentityTypeID = splitEntities[1]
+								var secondEntityName = response['dataResult']['entities'][secondentityTypeID]
+								headerCell1.innerHTML = "<pre>" + entityName + " - " + secondEntityName + " : " + displayName + " : " + aggregation + "</pre>";
+								var chartName = entityName + " - " + secondEntityName + " : " + displayName + " : " + aggregation
+								var chartID = chartName + entity
+							}
+							else if (splitEntities.length > 1) {
+								var dummyKey = splitEntities.shift();
+								var secondEntityString = splitEntities.join(", ");
+								headerCell1.innerHTML = "<pre>" + entityName + " - " + secondEntityString + " : " + displayName + " : " + aggregation + "</pre>";
+								var chartName = entityName + " - " + secondEntityString + " : " + displayName + " : " + aggregation
+								var chartID = chartName + entity
 							}
 							else {
-								headerCell1.innerHTML = "<pre>" + serviceName + " : " + displayName + " : " + aggregation + "</pre>";
+								headerCell1.innerHTML = "<pre>" + entityName + " : " + displayName + " : " + aggregation + "</pre>";
+								var chartName = entityName + " : " + displayName + " : " + aggregation
+								var chartID = chartName + entity
 							}
 						}
 						else {
-							if(splitEntities.length > 1) {
-								var secondEntityID = splitEntities[1]
-								var secondEntityName = response['dataResult']['entities'][secondEntityID]
-								headerCell1.innerHTML = "<pre>" + serviceName + " - " + secondEntityName + " : " + displayName + "</pre>";
+							if(splitEntities.length > 1 && firstCharIsCapital(splitEntities[1])) {
+								var secondentityTypeID = splitEntities[1]
+								var secondEntityName = response['dataResult']['entities'][secondentityTypeID]
+								headerCell1.innerHTML = "<pre>" + entityName + " - " + secondEntityName + " : " + displayName + "</pre>";
+								var chartName = entityName + " - " + secondEntityName + " : " + displayName
+								var chartID = chartName + entity
+							}
+							else if (splitEntities.length > 1) {
+								var dummyKey = splitEntities.shift()
+								var secondEntityString = splitEntities.join(", ");
+								headerCell1.innerHTML = "<pre>" + entityName + " - " + secondEntityString + " : " + displayName + "</pre>";
+								var chartName = entityName + " - " + secondEntityString + " : " + displayName
+								var chartID = chartName + entity
 							}
 							else {
-								headerCell1.innerHTML = "<pre>" + serviceName + " : " + displayName + "</pre>";
+								headerCell1.innerHTML = "<pre>" + entityName + " : " + displayName + "</pre>";
+								var chartName = entityName + " : " + displayName
+								var chartID = chartName + entity
 							}
 						}
 						tblRow.appendChild(headerCell1);
@@ -1342,27 +1023,37 @@
 						tblRow.appendChild(headerCell4);
 						
 						
-						for (i in serviceResponse[entity]) {
+						for (i in apiResponse[entity]) {
 							tblRow = table.insertRow(-1)
 							
-							var dateTimeUTC = new Date(serviceResponse[entity][i][0]);
+							var dateTimeUTC = new Date(apiResponse[entity][i][0]);
 							var localDateTime = dateTimeUTC.toLocaleString();
 						
 							var cell1 = tblRow.insertCell(-1);
 							cell1.innerHTML = "<center><pre>" + localDateTime + "</pre></center>"
 							
 							var cell2 = tblRow.insertCell(-1);
-							if (serviceResponse[entity][i][1] != null) {
+							if (apiResponse[entity][i][1] != null) {
 								cell2.setAttribute("data-type","Number");
-								cell2.setAttribute("data-value",serviceResponse[entity][i][1]);
-								cell2.innerHTML = "<pre>" + serviceResponse[entity][i][1] + "</pre>"
+								cell2.setAttribute("data-value",apiResponse[entity][i][1]);
+								cell2.innerHTML = "<pre>" + apiResponse[entity][i][1] + "</pre>"
 							}
 							else {
 								cell2.setAttribute("data-type","String");
 								cell2.setAttribute("data-value","null");
 								cell2.innerHTML = "<pre>" + "null" + "</pre>"
 							}
+							//add Data to chartData Table for drawing chart later on 
+							chartData.addRow([localDateTime,apiResponse[entity][i][1]])
 						}
+						// After data is added to chartData Data Table, build new div to place chart
+						// then drawChart 
+						reportDiv = document.getElementById("rightChart")
+						reportDiv.innerHTML = reportDiv.innerHTML + "<div id=\"" + chartID + "\"></div>"
+						chartURI = drawChart(chartID,chartName,chartData);
+						window.open(chartURI)
+						
+						
 						tblRow = table.insertRow(-1)
 						var cell1 = tblRow.insertCell(-1);
 						cell1.innerHTML = " "
@@ -1372,14 +1063,16 @@
 
 					}
 					
-					dvTable = document.getElementById("serviceMetrics");
+					entityTypeMetricID = entityType + "Metrics"
+					
+					dvTable = document.getElementById(entityTypeMetricID);
 					dvTable.appendChild(table);
 					dvTable.innerHTML = dvTable.innerHTML + "</br>"
 					entityKeys = []
 				});
 				
 				request.fail(function (response, textStatus) {
-					dvTable = document.getElementById("serviceMetrics");
+					dvTable = document.getElementById(entityTypeMetricID);
 					dvTable.innerHTML = dvTable.innerHTML + "<p><pre>Request Failed: " + textStatus + "</pre></p>"
 				
 				});
@@ -1484,6 +1177,7 @@
 		
 		//From all Tables created build out Excel Button 
 		function createExcelButton (collectHostMetrics,fullHostMetricsList,collectProcessMetrics,fullProcessMetricsList,collectServiceMetrics, fullServiceMetricsList) {
+		
 			//format metric list correctly for excel download 
 			
 			var downloadButtonHTML = ""
@@ -1562,39 +1256,43 @@
 			if (collectHostMetrics== true && collectProcessMetrics == true && collectServiceMetrics == true){
 				dynatraceMetricNameString = hostMetricsListTrimmed.join("','") + "','" + processMetricsListTrimmed.join("','")+ "','" + serviceMetricsListTrimmed.join("','");
 				dynatraceMetricTableString = collectedHostMetricsList.join("','") + "','" + collectedProcessMetricsList.join("','")+ "','" + collectedServiceMetricsList.join("','");			
-				downloadButtonHTML += "<button onclick=\"tablesToExcel(['reportInfoTable','"+dynatraceMetricTableString+"'],['Report_Info','"+dynatraceMetricNameString+"'],'exportedReport.xls','Excel')\">Export to Excel</button>"
+				downloadButtonHTML += "<button onclick=\"tablesToExcel(['reportInfoTable','"+dynatraceMetricTableString+"'],['Report_Info','"+dynatraceMetricNameString+"'],'exportedReport.xls','Excel')\">Download Raw Data to Excel</button>"
 			}
 			else if (collectHostMetrics== true && collectProcessMetrics == true && collectServiceMetrics == false){
 				dynatraceMetricNameString = hostMetricsListTrimmed.join("','") + "','" + processMetricsListTrimmed.join("','");
 				dynatraceMetricTableString = collectedHostMetricsList.join("','") + "','" + collectedProcessMetricsList.join("','");			
-				downloadButtonHTML += "<button onclick=\"tablesToExcel(['reportInfoTable','"+dynatraceMetricTableString+"'],['Report_Info','"+dynatraceMetricNameString+"'],'exportedReport.xls','Excel')\">Export to Excel</button>"
+				downloadButtonHTML += "<button onclick=\"tablesToExcel(['reportInfoTable','"+dynatraceMetricTableString+"'],['Report_Info','"+dynatraceMetricNameString+"'],'exportedReport.xls','Excel')\">Download Raw Data to Excel</button>"
 			}
 			else if (collectHostMetrics== true && collectProcessMetrics == false && collectServiceMetrics == true){
 				dynatraceMetricNameString = hostMetricsListTrimmed.join("','") + "','" + serviceMetricsListTrimmed.join("','");
 				dynatraceMetricTableString = collectedHostMetricsList.join("','") + "','" + collectedServiceMetricsList.join("','");			
-				downloadButtonHTML += "<button onclick=\"tablesToExcel(['reportInfoTable','"+dynatraceMetricTableString+"'],['Report_Info','"+dynatraceMetricNameString+"'],'exportedReport.xls','Excel')\">Export to Excel</button>"
+				downloadButtonHTML += "<button onclick=\"tablesToExcel(['reportInfoTable','"+dynatraceMetricTableString+"'],['Report_Info','"+dynatraceMetricNameString+"'],'exportedReport.xls','Excel')\">Download Raw Data to Excel</button>"
 			}
 			else if (collectHostMetrics== true && collectProcessMetrics == false && collectServiceMetrics == false) {
 				dynatraceMetricNameString = hostMetricsListTrimmed.join("','")
 				dynatraceMetricTableString = collectedHostMetricsList.join("','")
-				downloadButtonHTML += "<button onclick=\"tablesToExcel(['reportInfoTable','"+dynatraceMetricTableString+"'],['Report_Info','"+dynatraceMetricNameString+"'],'exportedReport.xls','Excel')\">Export to Excel</button>"
+				downloadButtonHTML += "<button onclick=\"tablesToExcel(['reportInfoTable','"+dynatraceMetricTableString+"'],['Report_Info','"+dynatraceMetricNameString+"'],'exportedReport.xls','Excel')\">Download Raw Data to Excel</button>"
 			}
 			else if (collectHostMetrics== false && collectProcessMetrics == true && collectServiceMetrics == false) {
 				dynatraceMetricNameString = processMetricsListTrimmed.join("','");
 				dynatraceMetricTableString = collectedProcessMetricsList.join("','");
-				downloadButtonHTML += "<button onclick=\"tablesToExcel(['reportInfoTable','"+dynatraceMetricTableString+"'],['Report_Info','"+dynatraceMetricNameString+"'],'exportedReport.xls','Excel')\">Export to Excel</button>"
+				downloadButtonHTML += "<button onclick=\"tablesToExcel(['reportInfoTable','"+dynatraceMetricTableString+"'],['Report_Info','"+dynatraceMetricNameString+"'],'exportedReport.xls','Excel')\">Download Raw Data to Excel</button>"
 			}
 			else if (collectHostMetrics== false && collectProcessMetrics == false && collectServiceMetrics == true) {
 				dynatraceMetricNameString = serviceMetricsListTrimmed.join("','");
 				dynatraceMetricTableString = collectedServiceMetricsList.join("','");
-				downloadButtonHTML += "<button onclick=\"tablesToExcel(['reportInfoTable','"+dynatraceMetricTableString+"'],['Report_Info','"+dynatraceMetricNameString+"'],'exportedReport.xls','Excel')\">Export to Excel</button>"
+				downloadButtonHTML += "<button onclick=\"tablesToExcel(['reportInfoTable','"+dynatraceMetricTableString+"'],['Report_Info','"+dynatraceMetricNameString+"'],'exportedReport.xls','Excel')\">Download Raw Data to Excel</button>"
 			}
 			else if (collectHostMetrics== false && collectProcessMetrics == true && collectServiceMetrics == true) {
 				dynatraceMetricNameString = processMetricsListTrimmed.join("','") + "','" + serviceMetricsListTrimmed.join("','");
 				dynatraceMetricTableString = collectedProcessMetricsList.join("','") + "','" + collectedServiceMetricsList.join("','");
-				downloadButtonHTML += "<button onclick=\"tablesToExcel(['reportInfoTable','"+dynatraceMetricTableString+"'],['Report_Info','"+dynatraceMetricNameString+"'],'exportedReport.xls','Excel')\">Download Excel</button>"
+				downloadButtonHTML += "<button onclick=\"tablesToExcel(['reportInfoTable','"+dynatraceMetricTableString+"'],['Report_Info','"+dynatraceMetricNameString+"'],'exportedReport.xls','Excel')\">Download Raw Data to Excel</button>"
 			}
 			document.getElementById("downloadButton").innerHTML = downloadButtonHTML;
 		}
-	});
+		
+		function firstCharIsCapital (word) {
+			return word[0] !== word[0].toLowerCase();
+		}
+	});		
 </script>

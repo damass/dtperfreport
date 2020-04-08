@@ -112,7 +112,7 @@
 				};		
 				var chart = new google.visualization.LineChart(document.getElementById(chartID));
 				chart.draw(data,options);	
-				return chart.getImageURI();
+				return chart.getImageURI();	
 			}
 			
 			function showTable() {
@@ -1051,7 +1051,18 @@
 						reportDiv.innerHTML = reportDiv.innerHTML + "<div id=\"" + chartID + "\"></div>"
 						chartURI = drawChart(chartID,chartName,chartData);
 						
-						//could do something with chartURI
+						//Add download Link below Chart 
+						var newChart = document.getElementById(chartID)
+						var data = chartURI.replace(/^data:image\/\w+;base64,/, "");
+						var downloadLink = "data:application/octet-stream;base64," + data
+						
+						downloadLinkHTML = document.createElement('a');
+						downloadLinkHTML.setAttribute("href",downloadLink)
+						downloadLinkHTML.setAttribute("download",chartName+".png")
+						downloadLinkHTML.setAttribute("style","color: white;")
+						downloadLinkHTML.innerHTML = "<center>Download Link</center>"
+						
+						newChart.appendChild(downloadLinkHTML)
 						
 						tblRow = table.insertRow(-1)
 						var cell1 = tblRow.insertCell(-1);

@@ -12,11 +12,11 @@
 			color : #fff
 		}
 		
-		#loadingSection.hide, #mainSection.hide, #hostMetricsLabel.hide, #processMetricsLabel.hide, #serviceMetricsLabel.hide, #hostMetricsSection.hide, #processMetricsSection.hide, #serviceMetricsSection.hide, #timeSection.hide, #reportSection.hide, #chartButton.hide, #tableButton.hide, #leftTable.hide, #rightChart.hide, #reportRunningSection.hide{
+		#loadingSection.hide, #mainSection.hide, #hostMetricsLabel.hide, #processMetricsLabel.hide, #serviceMetricsLabel.hide, #hostMetricsSection.hide, #processMetricsSection.hide, #serviceMetricsSection.hide, #timeSection.hide, #reportSection.hide, #chartButton.hide, #tableButton.hide, #dataTable.hide, #dataChart.hide {
 			display: none;
 		}
 		
-		#loadingSection.show, #mainSection.show, #hostMetricsLabel.show, #processMetricsLabel.show, #serviceMetricsLabel.show, #hostMetricsSection.show, #processMetricsSection.show, #serviceMetricsSection.show, #timeSection.show, #reportSection.show, #chartButton.show, #tableButton.show, #leftTable.show, #rightChart.show, #reportRunningSection.show{
+		#loadingSection.show, #mainSection.show, #hostMetricsLabel.show, #processMetricsLabel.show, #serviceMetricsLabel.show, #hostMetricsSection.show, #processMetricsSection.show, #serviceMetricsSection.show, #timeSection.show, #reportSection.show, #chartButton.show, #tableButton.show, #dataTable.show, #dataChart.show {
 			display: block;
 		}			
 	</style>
@@ -118,14 +118,14 @@
 			function showTable() {
 				document.getElementById("tableButton").setAttribute("class","hide");
 				document.getElementById("chartButton").setAttribute("class","show");
-				document.getElementById("leftTable").setAttribute("class","show");
-				document.getElementById("rightChart").setAttribute("class","hide");
+				document.getElementById("dataTable").setAttribute("class","show");
+				document.getElementById("dataChart").setAttribute("class","hide");
 			}
 			function showChart() {
 				document.getElementById("tableButton").setAttribute("class","show");
 				document.getElementById("chartButton").setAttribute("class","hide");				
-				document.getElementById("leftTable").setAttribute("class","hide");
-				document.getElementById("rightChart").setAttribute("class","show");
+				document.getElementById("dataTable").setAttribute("class","hide");
+				document.getElementById("dataChart").setAttribute("class","show");
 			}		
 		</script>
 		
@@ -304,7 +304,7 @@
 			</table> 
 			<div id="reportTimingInfo"></div>
 			<hr>
-			<div id="leftTable" class="hide">
+			<div id="dataTable" class="hide">
 				<h3 id="hostMetricsLabel"><pre>Host Metrics</pre></h3>
 				<div id="hostMetrics"></div>
 				<h3 id="processMetricsLabel"><pre>Process Metrics</pre></h3>
@@ -312,7 +312,7 @@
 				<h3 id="serviceMetricsLabel"><pre>Service Metrics</pre></h3>
 				<div id="serviceMetrics"></div>
 			</div>
-			<div id="rightChart">
+			<div id="dataChart">
 			</div>
 		</div>
 	</body> 
@@ -726,7 +726,7 @@
 				var dvHostTable = document.getElementById("hostMetrics");
 				var dvProcessTable = document.getElementById("processMetrics");
 				var dvServiceTable = document.getElementById("serviceMetrics");
-				var dvReportSection = document.getElementById("rightChart");
+				var dvReportSection = document.getElementById("dataChart");
 
 				var hostMetricsLabel = document.getElementById("hostMetricsLabel");	
 				var processMetricsLabel = document.getElementById("processMetricsLabel");
@@ -1047,11 +1047,11 @@
 						}
 						// After data is added to chartData Data Table, build new div to place chart
 						// then drawChart 
-						reportDiv = document.getElementById("rightChart")
+						reportDiv = document.getElementById("dataChart")
 						reportDiv.innerHTML = reportDiv.innerHTML + "<div id=\"" + chartID + "\"></div>"
 						chartURI = drawChart(chartID,chartName,chartData);
-						//window.open(chartURI)
 						
+						//could do something with chartURI
 						
 						tblRow = table.insertRow(-1)
 						var cell1 = tblRow.insertCell(-1);

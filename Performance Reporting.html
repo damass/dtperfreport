@@ -12,11 +12,11 @@
 			color : #fff
 		}
 		
-		#loadingSection.hide, #mainSection.hide, #hostMetricsLabel.hide, #processMetricsLabel.hide, #serviceMetricsLabel.hide, #hostMetricsSection.hide, #processMetricsSection.hide, #serviceMetricsSection.hide, #timeSection.hide, #reportSection.hide, #chartButton.hide, #tableButton.hide, #dataTable.hide, #dataChart.hide {
+		#loadingSection.hide, #mainSection.hide, #hostMetricsLabel.hide, #processMetricsLabel.hide, #serviceMetricsLabel.hide, #hostMetricsSection.hide, #processMetricsSection.hide, #serviceMetricsSection.hide, #timeSection.hide, #reportSection.hide, #chartButton.hide, #tableButton.hide, #dataTable.hide, #dataChart.hide, #downloadAllButtonCell.hide {
 			display: none;
 		}
 		
-		#loadingSection.show, #mainSection.show, #hostMetricsLabel.show, #processMetricsLabel.show, #serviceMetricsLabel.show, #hostMetricsSection.show, #processMetricsSection.show, #serviceMetricsSection.show, #timeSection.show, #reportSection.show, #chartButton.show, #tableButton.show, #dataTable.show, #dataChart.show {
+		#loadingSection.show, #mainSection.show, #hostMetricsLabel.show, #processMetricsLabel.show, #serviceMetricsLabel.show, #hostMetricsSection.show, #processMetricsSection.show, #serviceMetricsSection.show, #timeSection.show, #reportSection.show, #chartButton.show, #tableButton.show, #dataTable.show, #dataChart.show, #downloadAllButtonCell.show {
 			display: block;
 		}			
 	</style>
@@ -90,6 +90,7 @@
 			}
 			})();
 
+			//draws the charts from the data gathered by the API 
 			function drawChart(chartID,chartTitle,data) {
 				var options = {
 					title : chartTitle,
@@ -115,18 +116,32 @@
 				return chart.getImageURI();	
 			}
 			
+			//used to show correct buttons after report is generated
 			function showTable() {
 				document.getElementById("tableButton").setAttribute("class","hide");
 				document.getElementById("chartButton").setAttribute("class","show");
 				document.getElementById("dataTable").setAttribute("class","show");
 				document.getElementById("dataChart").setAttribute("class","hide");
+				document.getElementById("downloadAllButtonCell").setAttribute("class","hide");
 			}
+			
+			//used to show correct buttons after report is generated
 			function showChart() {
 				document.getElementById("tableButton").setAttribute("class","show");
 				document.getElementById("chartButton").setAttribute("class","hide");				
 				document.getElementById("dataTable").setAttribute("class","hide");
 				document.getElementById("dataChart").setAttribute("class","show");
-			}		
+				document.getElementById("downloadAllButtonCell").setAttribute("class","show");
+			}
+			
+			//adds ability to download all chart images with one click
+			function downloadAllImages() {
+				var allImageLinks = document.querySelectorAll('#dataChart a');
+				for(i in allImageLinks) {
+					allImageLinks[i].click();
+				}
+			}
+			
 		</script>
 		
 	</head>
@@ -300,6 +315,11 @@
 					<td id="downloadButton"></td>
 					<td id="chartButton" class="hide"><button onclick="showChart()">Show Chart</button></td>
 					<td id="tableButton" class="hide"><button onclick="showTable()">Show Table</button></td>
+				</tr>
+				<tr>
+					<td></td>
+					<td id="downloadAllButtonCell" class="hide"><button id="downloadAllButton" onclick="downloadAllImages()">Download All Chart Pictures</button></td>
+					<td></td>
 				</tr>
 			</table> 
 			<div id="reportTimingInfo"></div>
@@ -791,6 +811,7 @@
 					createReportInfo(inputURLValue,localDateTimeStart,startTimeUTC,localDateTimeEnd,endTimeUTC)
 					createExcelButton(collectHostMetrics,hostMetricsList,collectProcessMetrics,processMetricsList,collectServiceMetrics,serviceMetricsList)
 					document.getElementById("tableButton").setAttribute("class","show");
+					document.getElementById("downloadAllButtonCell").setAttribute("class","show");
 				}
 				else {
 					alert("Time Frame Not Right, Try Again by Refreshing the Page")
@@ -801,7 +822,7 @@
 				alert('Input Time not Valid or No Metrics Selected, Try Again') 
 			}
 		});
-		
+				
 		//Calculate Start & End Times from input 
 		function calculateStartTime() {
 			var inputDay=$('#startDay').val();
@@ -970,19 +991,19 @@
 								var secondentityTypeID = splitEntities[1]
 								var secondEntityName = response['dataResult']['entities'][secondentityTypeID]
 								headerCell1.innerHTML = "<pre>" + entityName + " - " + secondEntityName + " : " + displayName + " : " + aggregation + "</pre>";
-								var chartName = entityName + " - " + secondEntityName + " : " + displayName + " : " + aggregation
+								var chartName = entityName + " - " + secondEntityName + " : " + displayName + " : " + aggregation + " : " + startTime + "_" + endTime
 								var chartID = chartName + entity
 							}
 							else if (splitEntities.length > 1) {
 								var dummyKey = splitEntities.shift();
 								var secondEntityString = splitEntities.join(", ");
 								headerCell1.innerHTML = "<pre>" + entityName + " - " + secondEntityString + " : " + displayName + " : " + aggregation + "</pre>";
-								var chartName = entityName + " - " + secondEntityString + " : " + displayName + " : " + aggregation
+								var chartName = entityName + " - " + secondEntityString + " : " + displayName + " : " + aggregation + " : " + startTime + "_" + endTime
 								var chartID = chartName + entity
 							}
 							else {
 								headerCell1.innerHTML = "<pre>" + entityName + " : " + displayName + " : " + aggregation + "</pre>";
-								var chartName = entityName + " : " + displayName + " : " + aggregation
+								var chartName = entityName + " : " + displayName + " : " + aggregation + " : " + startTime + "_" + endTime
 								var chartID = chartName + entity
 							}
 						}
@@ -991,19 +1012,19 @@
 								var secondentityTypeID = splitEntities[1]
 								var secondEntityName = response['dataResult']['entities'][secondentityTypeID]
 								headerCell1.innerHTML = "<pre>" + entityName + " - " + secondEntityName + " : " + displayName + "</pre>";
-								var chartName = entityName + " - " + secondEntityName + " : " + displayName
+								var chartName = entityName + " - " + secondEntityName + " : " + displayName + " : " + startTime + "_" + endTime
 								var chartID = chartName + entity
 							}
 							else if (splitEntities.length > 1) {
 								var dummyKey = splitEntities.shift()
 								var secondEntityString = splitEntities.join(", ");
 								headerCell1.innerHTML = "<pre>" + entityName + " - " + secondEntityString + " : " + displayName + "</pre>";
-								var chartName = entityName + " - " + secondEntityString + " : " + displayName
+								var chartName = entityName + " - " + secondEntityString + " : " + displayName + " : " + startTime + "_" + endTime
 								var chartID = chartName + entity
 							}
 							else {
 								headerCell1.innerHTML = "<pre>" + entityName + " : " + displayName + "</pre>";
-								var chartName = entityName + " : " + displayName
+								var chartName = entityName + " : " + displayName + " : " + startTime + "_" + endTime
 								var chartID = chartName + entity
 							}
 						}

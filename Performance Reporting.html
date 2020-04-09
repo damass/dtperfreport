@@ -23,6 +23,9 @@
 	<head>
 		<title>Performance Reporting Tool - v1 Timeseries</title>
 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.5/jszip.min.js"></script>
+		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jszip-utils/0.0.2/jszip-utils.min.js"></script>
+		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.8/FileSaver.min.js"></script>
 		<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
 		<script>
 			google.charts.load("current", {packages:['line','corechart','table']});
@@ -137,9 +140,11 @@
 			//adds ability to download all chart images with one click
 			function downloadAllImages() {
 				var allImageLinks = document.querySelectorAll('#dataChart a');
+				
 				for(i in allImageLinks) {
 					allImageLinks[i].click();
 				}
+				
 			}
 			
 		</script>
@@ -318,7 +323,7 @@
 				</tr>
 				<tr>
 					<td></td>
-					<td id="downloadAllButtonCell" class="hide"><button id="downloadAllButton" onclick="downloadAllImages()">Download All Chart Pictures</button></td>
+					<td id="downloadAllButtonCell" class="hide"><button id="downloadAllButton">Download All Chart Pictures</button></td>
 					<td></td>
 				</tr>
 			</table> 
@@ -822,7 +827,44 @@
 				alert('Input Time not Valid or No Metrics Selected, Try Again') 
 			}
 		});
+		
+		$('#downloadAllButton').click(function () {
+				console.log("Downloading all chart images...")
+				var allImageLinks = $('.chartDownloadLink');
+				var zip = new JSZip();
+				var count = 0;
+				var zipFileName = "ChartImages.zip";
+								
+				console.log
 				
+				allImageLinks.each(function () {					
+					var chartName = $(this).attr('download');
+					var url = $(this).attr('href');
+					
+					
+					// remove special characters to make filename safe
+					var fileName = chartName.replace(/:/g,"-");
+					fileName = fileName.replace(/\\/g,"");
+					fileName = fileName.replace(/\//g,"");
+					fileName = fileName.replace(/\*/g,"");
+					fileName = fileName.replace(/\?/g,"");
+					fileName = fileName.replace(/\"/g,"");
+					fileName = fileName.replace(/\</g,"");
+					fileName = fileName.replace(/\>/g,"");
+					fileName = fileName.replace(/\|/g,"");
+					//remove first part of data URL so that the data is extracted
+					data = url.replace(/^data:application\/octet-stream;base64,/, "");
+										
+					zip.file(fileName, data, { base64: true });
+					count++;
+					if (count == allImageLinks.length) {
+						zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: {level:9}}).then(function (content) {
+							saveAs(content, zipFileName);
+						});
+					}
+				});
+		});
+		
 		//Calculate Start & End Times from input 
 		function calculateStartTime() {
 			var inputDay=$('#startDay').val();
@@ -1081,6 +1123,7 @@
 						downloadLinkHTML.setAttribute("href",downloadLink)
 						downloadLinkHTML.setAttribute("download",chartName+".png")
 						downloadLinkHTML.setAttribute("style","color: white;")
+						downloadLinkHTML.setAttribute("class","chartDownloadLink")
 						downloadLinkHTML.innerHTML = "<center>Download Link</center>"
 						
 						newChart.appendChild(downloadLinkHTML)

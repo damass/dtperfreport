@@ -53,11 +53,11 @@
 			}
 			
 			//draws the charts from the data gathered by the API 
-			function drawChart(chartID,chartTitle,data) {
+			function drawChart(chartTitle,data) {
 				var options = {
 					title : chartTitle,
 					width: '85%',
-					height: 500,
+					height: 600,
 					backgroundColor: '#2d2d2d',
 					aggregationTarget: 'category',
 					focusTarget: 'datum',
@@ -68,13 +68,21 @@
 							minValue: 0},
 					titleTextStyle: {color : 'white'},
 					legend: { position: 'top',
-							 textStyle: {color : 'white'}
+							 textStyle: {color : 'white'},
+							 maxLines: 3
 							},
 					series: {
-						0: { color: '#4285F4' }
+						0: { color: '#4285F4' }, // DT blue
+						1: { color: '#6F2DA8' }, // DT Purple
+						2: { color: '#73BE28' }, // DT Green 
+						3: { color: '#FFFFFF' }, // White
+						4: { color: '#FF0000' }, // Red 
+						5: { color: '#FFFF00' }, // Yellow
+						6: { color: '#FF8C00' }, // Orange
+						7: { color: '#8B4513' } // Brown
 					}
 				};		
-				var chart = new google.visualization.LineChart(document.getElementById(chartID));
+				var chart = new google.visualization.LineChart(document.getElementById(chartTitle));
 				chart.draw(data,options);	
 				return chart.getImageURI();	
 			}
@@ -274,6 +282,7 @@
 		</div>	
 		</br></br>
 		<div id="reportSection" class="hide">
+			<pre>Entities per Chart (1-10): <input type="text" class="valid" id="entitiesPerChart" value="4"></pre>
 			<table>
 				<tr>
 					<td><button id="runReportButton" type="submit">Run Report</button></td>
@@ -323,6 +332,7 @@
 		var validEndHour = false
 		var validEndMinute = false
 		var validEndSecond = false
+		validEntitiesPerChart = true
 
 		var validTime = false
 		var allEntityIDNameArr = [] //used to capture all Entity ID & Names to create URLs for Report Info Section
@@ -655,7 +665,7 @@
 			 validEndMinute = false
 			}
 		});
-		
+				
 		$('#endSecond').on('input', function() {
 		var input=$(this);
 		var secondNumber=input.val();
@@ -670,6 +680,20 @@
 		});	
 		// End End Date Time Validations 
 		// End Time Validation Methods 
+	
+		//validation for Entities per chart text box 
+		$('#entitiesPerChart').on('input', function() {
+		var input=$(this);
+		var entitiesPerChartNumber=input.val();
+		if(entitiesPerChartNumber && $.isNumeric(entitiesPerChartNumber) && entitiesPerChartNumber > 0 && entitiesPerChartNumber <=10)
+			{input.removeClass("invalid").addClass("valid");
+			 validEntitiesPerChart = true
+			}
+		else
+			{input.removeClass("valid").addClass("invalid");
+			 validEntitiesPerChart = false
+			}
+		});
 	
 		// Start Validate Time Button Method 
 		$('#validateTimeButton').click(function() {
@@ -967,6 +991,7 @@
 					}
 					console.log("All Entity Keys : " + entityKeys)
 					
+					console.log("Building HTML Tables...")
 					var table = document.createElement("table")
 					table.border = "1";
 					table.id = dynatraceMetricID
@@ -975,12 +1000,6 @@
 					var tblRow = table.insertRow(-1)
 					
 					for (var x = 0; x < entityKeys.length; x++) {
-
-						//set up new chartData DataTable for each entity 
-						var chartData = new google.visualization.DataTable();
-						chartData.addColumn('string', 'date');
-						chartData.addColumn('number', dynatraceMetricID);
-					
 						var entity = entityKeys[x]
 					
 						splitEntities = entity.split(', ');
@@ -993,20 +1012,14 @@
 								var secondentityTypeID = splitEntities[1]
 								var secondEntityName = response['dataResult']['entities'][secondentityTypeID]
 								headerCell1.innerHTML = "<pre>" + entityName + " - " + secondEntityName + " : " + displayName + " : " + aggregation + "</pre>";
-								var chartName = entityName + " - " + secondEntityName + " : " + displayName + " : " + aggregation + " : " + startTime + "_" + endTime
-								var chartID = chartName + entity
 							}
 							else if (splitEntities.length > 1) {
 								var dummyKey = splitEntities.shift();
 								var secondEntityString = splitEntities.join(", ");
 								headerCell1.innerHTML = "<pre>" + entityName + " - " + secondEntityString + " : " + displayName + " : " + aggregation + "</pre>";
-								var chartName = entityName + " - " + secondEntityString + " : " + displayName + " : " + aggregation + " : " + startTime + "_" + endTime
-								var chartID = chartName + entity
 							}
 							else {
 								headerCell1.innerHTML = "<pre>" + entityName + " : " + displayName + " : " + aggregation + "</pre>";
-								var chartName = entityName + " : " + displayName + " : " + aggregation + " : " + startTime + "_" + endTime
-								var chartID = chartName + entity
 							}
 						}
 						else {
@@ -1014,20 +1027,14 @@
 								var secondentityTypeID = splitEntities[1]
 								var secondEntityName = response['dataResult']['entities'][secondentityTypeID]
 								headerCell1.innerHTML = "<pre>" + entityName + " - " + secondEntityName + " : " + displayName + "</pre>";
-								var chartName = entityName + " - " + secondEntityName + " : " + displayName + " : " + startTime + "_" + endTime
-								var chartID = chartName + entity
 							}
 							else if (splitEntities.length > 1) {
 								var dummyKey = splitEntities.shift()
 								var secondEntityString = splitEntities.join(", ");
 								headerCell1.innerHTML = "<pre>" + entityName + " - " + secondEntityString + " : " + displayName + "</pre>";
-								var chartName = entityName + " - " + secondEntityString + " : " + displayName + " : " + startTime + "_" + endTime
-								var chartID = chartName + entity
 							}
 							else {
 								headerCell1.innerHTML = "<pre>" + entityName + " : " + displayName + "</pre>";
-								var chartName = entityName + " : " + displayName + " : " + startTime + "_" + endTime
-								var chartID = chartName + entity
 							}
 						}
 						tblRow.appendChild(headerCell1);
@@ -1065,47 +1072,135 @@
 								cell2.setAttribute("data-value","null");
 								cell2.innerHTML = "<pre>" + "null" + "</pre>"
 							}
-							//add Data to chartData Table for drawing chart later on 
-							chartData.addRow([localDateTime,apiResponse[entity][i][1]])
 						}
-						// After data is added to chartData Data Table, build new div to place chart
-						// then drawChart 
-						reportDiv = document.getElementById("dataChart")
-						reportDiv.innerHTML = reportDiv.innerHTML + "<div id=\"" + chartID + "\"></div>"
-						chartURI = drawChart(chartID,chartName,chartData);
-						
-						//Add Image to HTML Table - TEST
-						headerCell2.innerHTML = "<img src=" +chartURI+ ">";
-						
-						//Add download Link below Chart 
-						var newChart = document.getElementById(chartID)
-						var data = chartURI.replace(/^data:image\/\w+;base64,/, "");
-						var downloadLink = "data:application/octet-stream;base64," + data
-						
-						downloadLinkHTML = document.createElement('a');
-						downloadLinkHTML.setAttribute("href",downloadLink)
-						downloadLinkHTML.setAttribute("download",chartName+".png")
-						downloadLinkHTML.setAttribute("style","color: white;")
-						downloadLinkHTML.setAttribute("class","chartDownloadLink")
-						downloadLinkHTML.innerHTML = "<center>Download Link</center>"
-						
-						newChart.appendChild(downloadLinkHTML)
-						
 						tblRow = table.insertRow(-1)
 						var cell1 = tblRow.insertCell(-1);
 						cell1.innerHTML = " "
 						var cell2 = tblRow.insertCell(-1);
 						cell2.innerHTML = " "
 						tblRow = table.insertRow(-1)
-
-					}
-					
+					}	
+					//Add new HTML Table to existing tables 
 					entityTypeMetricID = entityType + "Metrics"
 					
 					dvTable = document.getElementById(entityTypeMetricID);
 					dvTable.appendChild(table);
 					dvTable.innerHTML = dvTable.innerHTML + "</br>"
-					entityKeys = []
+					
+										
+					//build out charts with data from apiResponse 
+					
+					//set up new chartData DataTable for each entity 
+					
+					var chartData = new google.visualization.DataTable();
+					chartData.addColumn('string', 'Date');
+					
+					console.log("Entering Draw Chart Flow...")
+					
+					var entityPerChartCount = 0
+					var totalEntityCount = 0
+					var chartCount = 0
+					
+					for (var y = 0; y < entityKeys.length; y++) {
+						
+						var entity = entityKeys[y]
+						splitEntities = entity.split(', ');
+						entityTypeNameID = splitEntities[0]	
+						entityName = response['dataResult']['entities'][entityTypeNameID]
+						entityPerChartCount++
+						totalEntityCount++
+						
+						if (typeof aggregation !== 'undefined') {
+							if(splitEntities.length > 1 && firstCharIsCapital(splitEntities[1])) {
+								var secondentityTypeID = splitEntities[1]
+								var secondEntityName = response['dataResult']['entities'][secondentityTypeID]
+								var chartName = displayName + " : " + aggregation 
+								var chartColumnName = entityName + " - " + secondEntityName
+							}
+							else if (splitEntities.length > 1) {
+								var dummyKey = splitEntities.shift();
+								var secondEntityString = splitEntities.join(", ");
+								headerCell1.innerHTML = "<pre>" + entityName + " - " + secondEntityString + " : " + displayName + " : " + aggregation + "</pre>";
+								var chartNumber = y + 1
+								var chartName = displayName + " : " + aggregation
+								var chartColumnName = entityName + " - " + secondEntityString
+							}
+							else {
+								headerCell1.innerHTML = "<pre>" + entityName + " : " + displayName + " : " + aggregation + "</pre>";
+								var chartNumber = y + 1
+								var chartName = displayName + " : " + aggregation
+								var chartColumnName = entityName
+							}
+						}
+						else {
+							if(splitEntities.length > 1 && firstCharIsCapital(splitEntities[1])) {
+								var secondentityTypeID = splitEntities[1]
+								var secondEntityName = response['dataResult']['entities'][secondentityTypeID]
+								var chartNumber = y + 1
+								var chartName = displayName
+								var chartColumnName = entityName + " - " + secondEntityName
+							}
+							else if (splitEntities.length > 1) {
+								var dummyKey = splitEntities.shift()
+								var secondEntityString = splitEntities.join(", ");
+								var chartNumber = y + 1
+								var chartName = displayName
+								var chartColumnName = entityName + " - " + secondEntityString
+							}
+							else {
+								headerCell1.innerHTML = "<pre>" + entityName + " : " + displayName + "</pre>";
+								var chartNumber = y + 1
+								var chartName = displayName + " : " + aggregation
+								var chartColumnName = entityName
+							}
+						}
+
+						colIndex = chartData.addColumn('number', chartColumnName);	
+						for (i in apiResponse[entity]) {
+							if (entityPerChartCount == 1) {
+								var dateTimeUTC = new Date(apiResponse[entity][i][0]);
+								var localDateTime = dateTimeUTC.toLocaleString();
+								chartData.addRow([localDateTime,apiResponse[entity][i][1]]);
+							}
+							else {
+								rowInt = parseInt(i) //make sure i is a integer (something weird with setCell method) 
+								chartData.setCell(rowInt,colIndex,apiResponse[entity][i][1]);
+							}
+						}
+						
+						//Text Box Value determines how many Entities to put on each chart 
+						entitiesPerChartValue = document.getElementById('entitiesPerChart').value
+						if (entityPerChartCount == entitiesPerChartValue || totalEntityCount == entityKeys.length){
+							// After data is added to chartData Data Table, build new div to place chart
+							// then drawChart 
+							chartCount++ // used to name each chart invidually 
+							chartName = chartName + " - "+chartCount
+							reportDiv = document.getElementById("dataChart")
+							reportDiv.innerHTML = reportDiv.innerHTML + "<div id=\"" + chartName + "\"></div>"
+							console.log("Entering Draw Chart...")
+							chartURI = drawChart(chartName,chartData);
+													
+							//Add download Link below Chart 
+							console.log("Adding Chart Link...")
+							var newChart = document.getElementById(chartName)
+							var data = chartURI.replace(/^data:image\/\w+;base64,/, "");
+							var downloadLink = "data:application/octet-stream;base64," + data
+							
+							downloadLinkHTML = document.createElement('a');
+							downloadLinkHTML.setAttribute("href",downloadLink)
+							downloadLinkHTML.setAttribute("download",chartName+".png")
+							downloadLinkHTML.setAttribute("style","color: white;")
+							downloadLinkHTML.setAttribute("class","chartDownloadLink")
+							downloadLinkHTML.innerHTML = "<center>Download Link</center>"
+							newChart.appendChild(downloadLinkHTML)
+							
+							//start with next batch of entities 
+							var chartData = new google.visualization.DataTable();
+							chartData.addColumn('string', 'date');
+							entityPerChartCount = 0
+						}
+					}
+					entityKeys = []					
 				});
 				
 				request.fail(function (response, textStatus) {

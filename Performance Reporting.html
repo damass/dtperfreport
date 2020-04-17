@@ -282,7 +282,7 @@
 		</div>	
 		</br></br>
 		<div id="reportSection" class="hide">
-			<pre>Entities per Chart (1-10): <input type="text" class="valid" id="entitiesPerChart" value="4"></pre>
+			<pre>Entities per Chart (Between 1 and 40): <input type="text" class="valid" id="entitiesPerChart" value="10"></pre>
 			<table>
 				<tr>
 					<td><button id="runReportButton" type="submit">Run Report</button></td>
@@ -685,7 +685,7 @@
 		$('#entitiesPerChart').on('input', function() {
 		var input=$(this);
 		var entitiesPerChartNumber=input.val();
-		if(entitiesPerChartNumber && $.isNumeric(entitiesPerChartNumber) && entitiesPerChartNumber > 0 && entitiesPerChartNumber <=10)
+		if(entitiesPerChartNumber && $.isNumeric(entitiesPerChartNumber) && entitiesPerChartNumber > 0 && entitiesPerChartNumber <=40)
 			{input.removeClass("invalid").addClass("valid");
 			 validEntitiesPerChart = true
 			}

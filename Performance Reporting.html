@@ -282,7 +282,13 @@
 		</div>	
 		</br></br>
 		<div id="reportSection" class="hide">
-			<pre>Entities per Chart (Between 1 and 40): <input type="text" class="valid" id="entitiesPerChart" value="10"></pre>
+			<table>
+				<tr>
+					<td><pre>Hosts per Chart (Between 1 and 50): <input type="text" class="valid" id="hostEntitiesPerChart" value="10"></pre></td>
+					<td><pre>Processes per Chart (Between 1 and 50): <input type="text" class="valid" id="processEntitiesPerChart" value="10"></pre></td>
+					<td><pre>Services per Chart (Between 1 and 50): <input type="text" class="valid" id="serviceEntitiesPerChart" value="10"></pre></td>
+				</tr>
+			</table>
 			<table>
 				<tr>
 					<td><button id="runReportButton" type="submit">Run Report</button></td>
@@ -682,10 +688,34 @@
 		// End Time Validation Methods 
 	
 		//validation for Entities per chart text box 
-		$('#entitiesPerChart').on('input', function() {
+		$('#hostEntitiesPerChart').on('input', function() {
 		var input=$(this);
 		var entitiesPerChartNumber=input.val();
-		if(entitiesPerChartNumber && $.isNumeric(entitiesPerChartNumber) && entitiesPerChartNumber > 0 && entitiesPerChartNumber <=40)
+		if(entitiesPerChartNumber && $.isNumeric(entitiesPerChartNumber) && entitiesPerChartNumber > 0 && entitiesPerChartNumber <=50)
+			{input.removeClass("invalid").addClass("valid");
+			 validEntitiesPerChart = true
+			}
+		else
+			{input.removeClass("valid").addClass("invalid");
+			 validEntitiesPerChart = false
+			}
+		});
+		$('#processEntitiesPerChart').on('input', function() {
+		var input=$(this);
+		var entitiesPerChartNumber=input.val();
+		if(entitiesPerChartNumber && $.isNumeric(entitiesPerChartNumber) && entitiesPerChartNumber > 0 && entitiesPerChartNumber <=50)
+			{input.removeClass("invalid").addClass("valid");
+			 validEntitiesPerChart = true
+			}
+		else
+			{input.removeClass("valid").addClass("invalid");
+			 validEntitiesPerChart = false
+			}
+		});
+		$('#serviceEntitiesPerChart').on('input', function() {
+		var input=$(this);
+		var entitiesPerChartNumber=input.val();
+		if(entitiesPerChartNumber && $.isNumeric(entitiesPerChartNumber) && entitiesPerChartNumber > 0 && entitiesPerChartNumber <=50)
 			{input.removeClass("invalid").addClass("valid");
 			 validEntitiesPerChart = true
 			}
@@ -1169,7 +1199,17 @@
 						}
 						
 						//Text Box Value determines how many Entities to put on each chart 
-						entitiesPerChartValue = document.getElementById('entitiesPerChart').value
+						switch (entityType){
+						case "host":
+							var entitiesPerChartValue = document.getElementById('hostEntitiesPerChart').value
+							break;
+						case "process":
+							var entitiesPerChartValue = document.getElementById('processEntitiesPerChart').value
+							break;
+						case "service":
+							var entitiesPerChartValue = document.getElementById('serviceEntitiesPerChart').value
+							break;
+						}		
 						if (entityPerChartCount == entitiesPerChartValue || totalEntityCount == entityKeys.length){
 							// After data is added to chartData Data Table, build new div to place chart
 							// then drawChart 

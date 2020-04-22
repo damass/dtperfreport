@@ -9,3 +9,13 @@
   3. Enter the time and click "Validate Time" then "Run Report"
   4. Review data in Charts or Tables with the different buttons
   5. Download data to Excel and Download Charts as PNG Images
+
+### Other Info
+This project uses CDNs that host JQuery, Google Charts & SheetsJS for different pieces of it's functionality so an internet connection is required. 
+
+#### Google Charts Documentation
+- https://developers.google.com/chart/interactive/docs/quick_start
+- https://developers.google.com/chart/interactive/docs/gallery/linechart
+
+#### SheetsJS Documentation
+- https://github.com/SheetJS/sheetjs

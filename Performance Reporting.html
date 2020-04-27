@@ -93,21 +93,31 @@
 			
 			//draws the charts from the data gathered by the API 
 			function drawChart(chartTitle,data) {
+				var nightModeBox = document.getElementById("chartsNightMode")
+				
+				var backgroundColor = "#2d2d2d";
+				var textColor = "white";
+				
+				if (nightModeBox.checked == false) {
+					textColor = "#2d2d2d";
+					backgroundColor = "white";
+				}
+				
 				var options = {
 					title : chartTitle,
 					width: '85%',
 					height: 600,
-					backgroundColor: '#2d2d2d',
+					backgroundColor: backgroundColor,
 					aggregationTarget: 'category',
 					focusTarget: 'datum',
 					tooltip: {trigger: 'none'},
 					enableInteractivity: 'false',
-					hAxis: {textStyle: {color : 'white'}},
-					vAxis: {textStyle: {color : 'white'},
+					hAxis: {textStyle: {color : textColor}},
+					vAxis: {textStyle: {color : textColor},
 							minValue: 0},
-					titleTextStyle: {color : 'white'},
+					titleTextStyle: {color : textColor},
 					legend: { position: 'top',
-							 textStyle: {color : 'white'},
+							 textStyle: {color : textColor},
 							 maxLines: 3
 							},
 					series: {
@@ -324,6 +334,8 @@
 					<td><pre>Hosts per Chart (Between 1 and 50): <input type="text" class="valid" id="hostEntitiesPerChart" value="10"></pre></td>
 					<td><pre>Processes per Chart (Between 1 and 50): <input type="text" class="valid" id="processEntitiesPerChart" value="10"></pre></td>
 					<td><pre>Services per Chart (Between 1 and 50): <input type="text" class="valid" id="serviceEntitiesPerChart" value="10"></pre></td>
+				</tr>
+					<td><pre><input type="checkbox" id="chartsNightMode" checked="true"><label>Charts in Night Mode?</label></pre></td>
 				</tr>
 			</table>
 			<table>

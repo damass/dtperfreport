@@ -39,7 +39,6 @@
 				document.getElementById("mainSection").setAttribute("class","show");
 			}
 			
-			
 			function tables2Excel (fullMetricTableNames, worksheetNames) {
 				console.log("Downloading Excel ...") 
 				var filename = "exportedReportData.xlsx"
@@ -153,8 +152,7 @@
 				document.getElementById("dataChart").setAttribute("class","show");
 				document.getElementById("downloadAllButtonCell").setAttribute("class","show");
 			}			
-		</script>
-		
+		</script>		
 	</head>
 	<body>
 		<table>
@@ -419,7 +417,7 @@
 			}
 		});
 		
-		$(document).ready(function(){
+		$('#processTag').ready(function(){
 			var inputProcessTag=$(this);
 			var inputProcessID = document.getElementById("processID");
 			if (inputProcessTag.val() != "") {
@@ -749,6 +747,7 @@
 			 validEntitiesPerChart = false
 			}
 		});
+		
 		$('#processEntitiesPerChart').on('input', function() {
 		var input=$(this);
 		var entitiesPerChartNumber=input.val();
@@ -761,6 +760,7 @@
 			 validEntitiesPerChart = false
 			}
 		});
+		
 		$('#serviceEntitiesPerChart').on('input', function() {
 		var input=$(this);
 		var entitiesPerChartNumber=input.val();

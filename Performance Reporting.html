@@ -38,7 +38,6 @@
 				document.getElementById("loadingSection").setAttribute("class","hide");
 				document.getElementById("mainSection").setAttribute("class","show");
 			}
-			
 			function tables2Excel (fullMetricTableNames, worksheetNames) {
 				console.log("Downloading Excel ...") 
 				var filename = "exportedReportData.xlsx"
@@ -89,7 +88,6 @@
 				}
 				XLSX.writeFile(wb, filename, {compression:true})
 			}
-			
 			//draws the charts from the data gathered by the API 
 			function drawChart(chartTitle,data) {
 				var nightModeBox = document.getElementById("chartsNightMode")
@@ -294,6 +292,12 @@
 			<table>
 				<tr>
 					<td><h3><pre>Input Start & End Dates and Times</pre></h3></td>
+				</tr>
+				</tr>
+					<td><button id="lastOneHour" type="submit">Last 1 Hour</button></td>
+				</tr>
+				<tr>
+					<td colspan="3"><center><pre style="background-color: red; font-weight: bold;">NOTE: If the Month and Day are disabled, try removing the Year Value to enable editing.</pre></center></td>
 				</tr>
 				<tr>
 					<td><pre>Start Month :   <input type="text" id="startMonth" placeholder=" 01"></pre></td>
@@ -552,10 +556,10 @@
 		
 		});		
 		// End Show Metric Type Section 
-		
+				
 		//Start Date Time Validations 
 		//Start Start Date Time Validations 
-		$('#startMonth').on('input', function() {
+		$('#startMonth').on("input click", function() {
 		var input=$(this);
 		var monthNumber=input.val();
 		if(monthNumber && $.isNumeric(monthNumber) && monthNumber >= 1 && monthNumber <=12)
@@ -568,7 +572,7 @@
 			}
 		});
 		
-		$('#startDay').on('input', function() {
+		$('#startDay').on("input click", function() {
 		var input=$(this);
 		var dayNumber=input.val();
 		if(dayNumber && $.isNumeric(dayNumber) && dayNumber >= 1 && dayNumber <=31)
@@ -582,7 +586,7 @@
 			}
 		});
 		
-		$('#startYear').on('input', function() {
+		$('#startYear').on("input click", function() {
 		var input=$(this);
 		var inputDay=$('#startDay');
 		var inputMonth=$('#startMonth');
@@ -591,20 +595,27 @@
 		var dayNumber=inputDay.val();
 		var monthNumber=inputMonth.val();
 		
-		inputDay.prop('disabled',true);
-		inputMonth.prop('disabled',true);
+		if (input.val() != ""){
+			inputDay.prop('disabled',true);
+			inputMonth.prop('disabled',true);
 		
-		if(yearNumber && $.isNumeric(yearNumber) && yearNumber >= 2015 && yearNumber <=2030 && checkDate(dayNumber,monthNumber,yearNumber))
-			{input.removeClass("invalid").addClass("valid");
-			 validStartYear = true
-			}
-		else
-			{input.removeClass("valid").addClass("invalid");
-			 validStartYear = false
-			}
+			if(yearNumber && $.isNumeric(yearNumber) && yearNumber >= 2015 && yearNumber <=2030 && checkDate(dayNumber,monthNumber,yearNumber))
+				{input.removeClass("invalid").addClass("valid");
+				validStartYear = true
+				}
+			else
+				{input.removeClass("valid").addClass("invalid");
+				validStartYear = false
+				}
+		}
+		else {
+			inputDay.prop('disabled',false);
+			inputMonth.prop('disabled',false);
+			input.removeClass("valid").addClass("invalid");		
+		}
 		});
 		
-		$('#startHour').on('input', function() {
+		$('#startHour').on("input click", function() {
 		var input=$(this);
 		var hourNumber=input.val();
 		if(hourNumber && $.isNumeric(hourNumber) && hourNumber >= 0 && hourNumber <=23)
@@ -617,7 +628,7 @@
 			}
 		});
 		
-		$('#startMinute').on('input', function() {
+		$('#startMinute').on("input click", function() {
 		var input=$(this);
 		var minuteNumber=input.val();
 		if(minuteNumber && $.isNumeric(minuteNumber) && minuteNumber >= 0 && minuteNumber <=59)
@@ -630,7 +641,7 @@
 			}
 		});
 		
-		$('#startSecond').on('input', function() {
+		$('#startSecond').on("input click", function() {
 		var input=$(this);
 		var secondNumber=input.val();
 		if(secondNumber && $.isNumeric(secondNumber) && secondNumber >= 0 && secondNumber <=59)
@@ -645,7 +656,7 @@
 		// End Start Date Time Validations 
 		
 		//End Date Time Validations 
-		$('#endMonth').on('input', function() {
+		$('#endMonth').on("input click", function() {
 		var input=$(this);
 		var monthNumber=input.val();
 		if(monthNumber && $.isNumeric(monthNumber) && monthNumber >= 1 && monthNumber <=12)
@@ -658,7 +669,7 @@
 			}
 		});
 		
-		$('#endDay').on('input', function() {
+		$('#endDay').on("input click", function() {
 		var input=$(this);
 		var dayNumber=input.val();
 		if(dayNumber && $.isNumeric(dayNumber) && dayNumber >= 1 && dayNumber <=31)
@@ -671,7 +682,7 @@
 			}
 		});
 		
-		$('#endYear').on('input', function() {
+		$('#endYear').on("input click", function() {
 		var input=$(this);
 		var inputDay=$('#endDay');
 		var inputMonth=$('#endMonth');
@@ -680,20 +691,27 @@
 		var dayNumber=inputDay.val();
 		var monthNumber=inputMonth.val();
 		
-		inputDay.prop('disabled',true);
-		inputMonth.prop('disabled',true);
+		if (input.val() != ""){
+			inputDay.prop('disabled',true);
+			inputMonth.prop('disabled',true);
 		
-		if(yearNumber && $.isNumeric(yearNumber) && yearNumber >= 2015 && yearNumber <=2030 && checkDate(dayNumber,monthNumber,yearNumber))
-			{input.removeClass("invalid").addClass("valid");
-			 validEndYear = true
-			}
-		else
-			{input.removeClass("valid").addClass("invalid");
-			 validEndYear = false
-			}
+			if(yearNumber && $.isNumeric(yearNumber) && yearNumber >= 2015 && yearNumber <=2030 && checkDate(dayNumber,monthNumber,yearNumber))
+				{input.removeClass("invalid").addClass("valid");
+				validEndYear = true
+				}
+			else
+				{input.removeClass("valid").addClass("invalid");
+				validEndYear = false
+				}
+		}
+		else {
+			inputDay.prop('disabled',false);
+			inputMonth.prop('disabled',false);
+			input.removeClass("valid").addClass("invalid");
+		}
 		});
 		
-		$('#endHour').on('input', function() {
+		$('#endHour').on("input click", function() {
 		var input=$(this);
 		var hourNumber=input.val();
 		if(hourNumber && $.isNumeric(hourNumber) && hourNumber >= 0 && hourNumber <=23)
@@ -706,7 +724,7 @@
 			}
 		});
 		
-		$('#endMinute').on('input', function() {
+		$('#endMinute').on("input click", function() {
 		var input=$(this);
 		var minuteNumber=input.val();
 		if(minuteNumber && $.isNumeric(minuteNumber) && minuteNumber >= 0 && minuteNumber <=59)
@@ -719,7 +737,7 @@
 			}
 		});
 				
-		$('#endSecond').on('input', function() {
+		$('#endSecond').on("input click", function() {
 		var input=$(this);
 		var secondNumber=input.val();
 		if(secondNumber && $.isNumeric(secondNumber) && secondNumber >= 0 && secondNumber <=59)
@@ -733,6 +751,33 @@
 		});	
 		// End End Date Time Validations 
 		// End Time Validation Methods 
+
+		//Automatic Start & End Time additions 
+		$('#lastOneHour').on("click", function() {
+			//Start Date/Time Auto Fill 
+			var now = new Date();
+			$('#startMonth').val(now.getMonth()+1).click();
+			$('#startDay').val(now.getDate()).click();
+			$('#startYear').val(now.getFullYear()).click();
+			if (now.getHours()-1 > 0) {
+				$('#startHour').val(now.getHours()-1).click();
+				$('#startMinute').val(now.getMinutes()).click();
+			}
+			else {
+				$('#startHour').val("00").click();
+				$('#startMinute').val("00").click();
+			}
+			$('#startSecond').val("00").click();
+			
+			//End Date/Time Auto Fill 
+			$('#endMonth').val(now.getMonth()+1).click();
+			$('#endDay').val(now.getDate()).click();
+			$('#endYear').val(now.getFullYear()).click();
+			$('#endHour').val(now.getHours()).click();
+			$('#endMinute').val(now.getMinutes()).click();
+			$('#endSecond').val("00").click();
+			//End Auto Date/Time Fill Section
+		});	
 	
 		//validation for Entities per chart text box 
 		$('#hostEntitiesPerChart').on('input', function() {

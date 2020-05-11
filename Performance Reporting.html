@@ -38,6 +38,7 @@
 				document.getElementById("loadingSection").setAttribute("class","hide");
 				document.getElementById("mainSection").setAttribute("class","show");
 			}
+			
 			function tables2Excel (fullMetricTableNames, worksheetNames) {
 				console.log("Downloading Excel ...") 
 				var filename = "exportedReportData.xlsx"
@@ -67,20 +68,29 @@
 								var aggregationSelection = document.getElementById(metricAgg);
 								var selectedAggList = aggregationSelection.selectedOptions //get Selected Options
 								var fullWS
+								var fullWSCount = 0
 								for (var aggLength=0; aggLength<selectedAggList.length; aggLength++) { // Run through selected aggregations 
 									var aggregationSelectionVal = selectedAggList[aggLength].value;
 									console.log("Start Building " + fullMetricTableNames[table]+"-"+ aggregationSelectionVal + " Temp WorkSheet...")
 									var tmpTable = document.getElementById(fullMetricTableNames[table]+"-"+aggregationSelectionVal)
-									if (aggLength == 0) {
-										fullWS = XLSX.utils.table_to_sheet(tmpTable, {dateNF: 'MM/DD/YYYY HH:mm:ss'})
+									if (tmpTable.rows.length > 2){	
+										if (aggLength == 0) {
+											fullWS = XLSX.utils.table_to_sheet(tmpTable, {dateNF: 'MM/DD/YYYY HH:mm:ss'})
+											fullWSCount = fullWSCount + 1
+										}
+										else {
+											var tmpWS = XLSX.utils.table_to_sheet(tmpTable, {cellDates: true, dateNF: 'MM/DD/YYYY HH:mm:ss'})
+											var tmpJSON = XLSX.utils.sheet_to_json(tmpWS, {cellDates: true, dateNF: 'MM/DD/YYYY HH:mm:ss', blankrows: true})
+											XLSX.utils.sheet_add_json(fullWS,tmpJSON, {skipHeader: false, origin: -1, cellDates: true, dateNF: 'MM/DD/YYYY HH:mm:ss', blankrows: true});
+										}
 									}
 									else {
-										var tmpWS = XLSX.utils.table_to_sheet(tmpTable, {cellDates: true, dateNF: 'MM/DD/YYYY HH:mm:ss'})
-										var tmpJSON = XLSX.utils.sheet_to_json(tmpWS, {cellDates: true, dateNF: 'MM/DD/YYYY HH:mm:ss', blankrows: true})
-										XLSX.utils.sheet_add_json(fullWS,tmpJSON, {skipHeader: false, origin: -1, cellDates: true, dateNF: 'MM/DD/YYYY HH:mm:ss', blankrows: true});
+										console.log("Table Length means no data. Not adding table to Work Sheet.")
 									}
 								}
-								XLSX.utils.book_append_sheet(wb, fullWS, worksheetNames[table]);
+								if (fullWSCount >= 1){
+									XLSX.utils.book_append_sheet(wb, fullWS, worksheetNames[table]);
+								}
 								console.log("Completed Building " + fullMetricTableNames[table] + " WorkSheet...")
 								break;	
 						}

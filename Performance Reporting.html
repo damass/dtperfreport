@@ -22,13 +22,18 @@
 	</style>
 	<head>
 		<title>Performance Reporting Tool - v1 Timeseries</title>
+		<!--Google CDN for jQuery --> 
 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+		<!--JS Zip to download Zip File -->
 		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.5/jszip.min.js"></script>
 		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jszip-utils/0.0.2/jszip-utils.min.js"></script>
 		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.8/FileSaver.min.js"></script>
-		<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+		<!--SheetsJS Libraries -->
 		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.15.2/shim.min.js"></script>
 		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.15.2/xlsx.full.min.js"></script>
+		<!--Google Charts Library-->
+		<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+
 		
 		<script>
 			google.charts.load("current", {packages:['line','corechart','table']});
@@ -1174,30 +1179,30 @@
 						if(splitEntities.length > 1 && firstCharIsCapital(splitEntities[1])) {
 							var secondentityTypeID = splitEntities[1]
 							var secondEntityName = response['dataResult']['entities'][secondentityTypeID]
-							headerCell1.innerHTML = "<pre>" + entityName + " - " + secondEntityName + " : " + displayName + " : " + aggregation + "</pre>";
+							headerCell1.innerHTML = "<pre>" + entityTypeNameID + " - " + entityName + " - " + secondEntityName + " : " + displayName + " : " + aggregation + "</pre>";
 						}
 						else if (splitEntities.length > 1) {
 							var dummyKey = splitEntities.shift();
 							var secondEntityString = splitEntities.join(", ");
-							headerCell1.innerHTML = "<pre>" + entityName + " - " + secondEntityString + " : " + displayName + " : " + aggregation + "</pre>";
+							headerCell1.innerHTML = "<pre>" + entityTypeNameID + " - " + entityName + " - " + secondEntityString + " : " + displayName + " : " + aggregation + "</pre>";
 						}
 						else {
-							headerCell1.innerHTML = "<pre>" + entityName + " : " + displayName + " : " + aggregation + "</pre>";
+							headerCell1.innerHTML = "<pre>" + entityTypeNameID + " - " + entityName + " : " + displayName + " : " + aggregation + "</pre>";
 						}
 					}
 					else {
 						if(splitEntities.length > 1 && firstCharIsCapital(splitEntities[1])) {
 							var secondentityTypeID = splitEntities[1]
 							var secondEntityName = response['dataResult']['entities'][secondentityTypeID]
-							headerCell1.innerHTML = "<pre>" + entityName + " - " + secondEntityName + " : " + displayName + "</pre>";
+							headerCell1.innerHTML = "<pre>" + entityTypeNameID + " - " + entityName + " - " + secondEntityName + " : " + displayName + "</pre>";
 						}
 						else if (splitEntities.length > 1) {
 							var dummyKey = splitEntities.shift()
 							var secondEntityString = splitEntities.join(", ");
-							headerCell1.innerHTML = "<pre>" + entityName + " - " + secondEntityString + " : " + displayName + "</pre>";
+							headerCell1.innerHTML = "<pre>" + entityTypeNameID + " - " + entityName + " - " + secondEntityString + " : " + displayName + "</pre>";
 						}
 						else {
-							headerCell1.innerHTML = "<pre>" + entityName + " : " + displayName + "</pre>";
+							headerCell1.innerHTML = "<pre>" + entityTypeNameID + " - " + entityName + " : " + displayName + "</pre>";
 						}
 					}
 					tblRow.appendChild(headerCell1);

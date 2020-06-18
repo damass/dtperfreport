@@ -12,11 +12,11 @@
 			color : #fff
 		}
 		
-		#loadingSection.hide, #mainSection.hide, #hostMetricsLabel.hide, #processMetricsLabel.hide, #serviceMetricsLabel.hide, #hostMetricsSection.hide, #processMetricsSection.hide, #serviceMetricsSection.hide, #timeSection.hide, #reportSection.hide, #chartButton.hide, #tableButton.hide, #dataTable.hide, #dataChart.hide, #downloadAllButtonCell.hide {
+		#loadingSection.hide, #mainSection.hide, #hostMetricsLabel.hide, #processMetricsLabel.hide, #serviceMetricsLabel.hide, #hostMetricsSection.hide, #processMetricsSection.hide, #serviceMetricsSection.hide, #timeSection.hide, #reportSection.hide, #chartButton.hide, #tableButton.hide, #dataTable.hide, #dataChart.hide, #downloadAllButtonCell.hide, #chartOptions.hide {
 			display: none;
 		}
 		
-		#loadingSection.show, #mainSection.show, #hostMetricsLabel.show, #processMetricsLabel.show, #serviceMetricsLabel.show, #hostMetricsSection.show, #processMetricsSection.show, #serviceMetricsSection.show, #timeSection.show, #reportSection.show, #chartButton.show, #tableButton.show, #dataTable.show, #dataChart.show, #downloadAllButtonCell.show {
+		#loadingSection.show, #mainSection.show, #hostMetricsLabel.show, #processMetricsLabel.show, #serviceMetricsLabel.show, #hostMetricsSection.show, #processMetricsSection.show, #serviceMetricsSection.show, #timeSection.show, #reportSection.show, #chartButton.show, #tableButton.show, #dataTable.show, #dataChart.show, #downloadAllButtonCell.show, #chartOptions.show {
 			display: block;
 		}			
 	</style>
@@ -348,9 +348,14 @@
 		<div id="reportSection" class="hide">
 			<table>
 				<tr>
-					<td><pre>Hosts per Chart (Between 1 and 50): <input type="text" class="valid" id="hostEntitiesPerChart" value="10"></pre></td>
-					<td><pre>Processes per Chart (Between 1 and 50): <input type="text" class="valid" id="processEntitiesPerChart" value="10"></pre></td>
-					<td><pre>Services per Chart (Between 1 and 50): <input type="text" class="valid" id="serviceEntitiesPerChart" value="10"></pre></td>
+					<td><pre><input type="checkbox" id="buildCharts" checked="true"><label>Build Charts?</label></pre></td>
+				</tr>
+			</table>
+			<table id="chartOptions">
+				<tr>
+					<td><pre>Hosts per Chart (Between 1 and 50): <input type="text" class="valid" id="hostEntitiesPerChart" value="25"></pre></td>
+					<td><pre>Processes per Chart (Between 1 and 50): <input type="text" class="valid" id="processEntitiesPerChart" value="25"></pre></td>
+					<td><pre>Services per Chart (Between 1 and 50): <input type="text" class="valid" id="serviceEntitiesPerChart" value="25"></pre></td>
 				</tr>
 					<td><pre><input type="checkbox" id="chartsNightMode" checked="true"><label>Charts in Night Mode?</label></pre></td>
 				</tr>
@@ -408,6 +413,19 @@
 
 		var validTime = false
 		var allEntityIDNameArr = [] //used to capture all Entity ID & Names to create URLs for Report Info Section
+
+		$('#buildCharts').on('click', function() {
+			var inputBuildCharts=$(this);
+			var chartOptionsTable = document.getElementById("chartOptions");
+			
+			if (inputBuildCharts.prop("checked")== true){
+				chartOptionsTable.setAttribute("class","show");
+			}
+			else 
+			{
+			  chartOptionsTable.setAttribute("class","hide");
+			}
+		});
 		
 
 		//start entity id or entity tag input validation 
@@ -938,8 +956,18 @@
 
 					createReportInfo(inputURLValue,localDateTimeStart,startTimeUTC,localDateTimeEnd,endTimeUTC)
 					createExcelButton(collectHostMetrics,hostMetricsList,collectProcessMetrics,processMetricsList,collectServiceMetrics,serviceMetricsList)
-					document.getElementById("tableButton").setAttribute("class","show");
-					document.getElementById("downloadAllButtonCell").setAttribute("class","show");
+					
+					if(document.getElementById("buildCharts").checked == false)
+					{
+						console.log("No Charts Built, Showing HTML Table...");
+						document.getElementById("dataTable").setAttribute("class","show");
+						document.getElementById("chartButton").setAttribute("class","hide");
+					}
+					else
+					{
+						document.getElementById("tableButton").setAttribute("class","show");
+						document.getElementById("downloadAllButtonCell").setAttribute("class","show");
+					}
 					console.log("Report Completed...")
 				}
 				else {
@@ -1254,121 +1282,123 @@
 									
 				//build out charts with data from apiResponse 
 				
-				//set up new chartData DataTable for each entity 
-				
-				var chartData = new google.visualization.DataTable();
-				chartData.addColumn('string', 'Date');
-				
-				console.log("Entering Draw Chart Flow...")
-				
-				var entityPerChartCount = 0
-				var totalEntityCount = 0
-				var chartCount = 0
-				
-				for (var y = 0; y < entityKeys.length; y++) {
+				var buildCharts = document.getElementById("buildCharts")
+				if(buildCharts.checked == true){
+					//set up new chartData DataTable for each entity 
+					var chartData = new google.visualization.DataTable();
+					chartData.addColumn('string', 'Date');
 					
-					var entity = entityKeys[y]
-					splitEntities = entity.split(', ');
-					entityTypeNameID = splitEntities[0]	
-					entityName = response['dataResult']['entities'][entityTypeNameID]
-					entityPerChartCount++
-					totalEntityCount++
+					console.log("Entering Draw Chart Flow...")
 					
-					if (typeof aggregation !== 'undefined') {
-						if(splitEntities.length > 1 && firstCharIsCapital(splitEntities[1])) {
-							var secondentityTypeID = splitEntities[1]
-							var secondEntityName = response['dataResult']['entities'][secondentityTypeID]
-							var chartName = displayName + " : " + aggregation 
-							var chartColumnName = entityName + " - " + secondEntityName
-						}
-						else if (splitEntities.length > 1) {
-							var dummyKey = splitEntities.shift();
-							var secondEntityString = splitEntities.join(", ");
-							var chartNumber = y + 1
-							var chartName = displayName + " : " + aggregation
-							var chartColumnName = entityName + " - " + secondEntityString
-						}
-						else {
-							var chartNumber = y + 1
-							var chartName = displayName + " : " + aggregation
-							var chartColumnName = entityName
-						}
-					}
-					else {
-						if(splitEntities.length > 1 && firstCharIsCapital(splitEntities[1])) {
-							var secondentityTypeID = splitEntities[1]
-							var secondEntityName = response['dataResult']['entities'][secondentityTypeID]
-							var chartNumber = y + 1
-							var chartName = displayName
-							var chartColumnName = entityName + " - " + secondEntityName
-						}
-						else if (splitEntities.length > 1) {
-							var dummyKey = splitEntities.shift()
-							var secondEntityString = splitEntities.join(", ");
-							var chartNumber = y + 1
-							var chartName = displayName
-							var chartColumnName = entityName + " - " + secondEntityString
-						}
-						else {
-							var chartNumber = y + 1
-							var chartName = displayName
-							var chartColumnName = entityName
-						}
-					}
-			
-					colIndex = chartData.addColumn('number', chartColumnName);	
-					for (i in apiResponse[entity]) {
-						if (entityPerChartCount == 1) {
-							var dateTimeUTC = new Date(apiResponse[entity][i][0]);
-							var localDateTime = dateTimeUTC.toLocaleString();
-							chartData.addRow([localDateTime,apiResponse[entity][i][1]]);
-						}
-						else {
-							rowInt = parseInt(i) //make sure i is a integer (something weird with setCell method) 
-							chartData.setCell(rowInt,colIndex,apiResponse[entity][i][1]);
-						}
-					}
+					var entityPerChartCount = 0
+					var totalEntityCount = 0
+					var chartCount = 0
 					
-					//Text Box Value determines how many Entities to put on each chart 
-					switch (entityType){
-					case "host":
-						var entitiesPerChartValue = document.getElementById('hostEntitiesPerChart').value
-						break;
-					case "process":
-						var entitiesPerChartValue = document.getElementById('processEntitiesPerChart').value
-						break;
-					case "service":
-						var entitiesPerChartValue = document.getElementById('serviceEntitiesPerChart').value
-						break;
-					}		
-					if (entityPerChartCount == entitiesPerChartValue || totalEntityCount == entityKeys.length){
-						// After data is added to chartData Data Table, build new div to place chart
-						// then drawChart 
-						chartCount++ // used to name each chart invidually 
-						chartName = chartName + " - "+chartCount
-						reportDiv = document.getElementById("dataChart")
-						reportDiv.innerHTML = reportDiv.innerHTML + "<div id=\"" + chartName + "\"></div>"
-						console.log("Entering Draw Chart...")
-						chartURI = drawChart(chartName,chartData);
-												
-						//Add download Link below Chart 
-						console.log("Adding Chart Link...")
-						var newChart = document.getElementById(chartName)
-						var data = chartURI.replace(/^data:image\/\w+;base64,/, "");
-						var downloadLink = "data:application/octet-stream;base64," + data
+					for (var y = 0; y < entityKeys.length; y++) {
 						
-						downloadLinkHTML = document.createElement('a');
-						downloadLinkHTML.setAttribute("href",downloadLink)
-						downloadLinkHTML.setAttribute("download",chartName+".png")
-						downloadLinkHTML.setAttribute("style","color: white;")
-						downloadLinkHTML.setAttribute("class","chartDownloadLink")
-						downloadLinkHTML.innerHTML = "<center>Download Link</center>"
-						newChart.appendChild(downloadLinkHTML)
+						var entity = entityKeys[y]
+						splitEntities = entity.split(', ');
+						entityTypeNameID = splitEntities[0]	
+						entityName = response['dataResult']['entities'][entityTypeNameID]
+						entityPerChartCount++
+						totalEntityCount++
 						
-						//start with next batch of entities 
-						var chartData = new google.visualization.DataTable();
-						chartData.addColumn('string', 'date');
-						entityPerChartCount = 0
+						if (typeof aggregation !== 'undefined') {
+							if(splitEntities.length > 1 && firstCharIsCapital(splitEntities[1])) {
+								var secondentityTypeID = splitEntities[1]
+								var secondEntityName = response['dataResult']['entities'][secondentityTypeID]
+								var chartName = displayName + " : " + aggregation 
+								var chartColumnName = entityName + " - " + secondEntityName
+							}
+							else if (splitEntities.length > 1) {
+								var dummyKey = splitEntities.shift();
+								var secondEntityString = splitEntities.join(", ");
+								var chartNumber = y + 1
+								var chartName = displayName + " : " + aggregation
+								var chartColumnName = entityName + " - " + secondEntityString
+							}
+							else {
+								var chartNumber = y + 1
+								var chartName = displayName + " : " + aggregation
+								var chartColumnName = entityName
+							}
+						}
+						else {
+							if(splitEntities.length > 1 && firstCharIsCapital(splitEntities[1])) {
+								var secondentityTypeID = splitEntities[1]
+								var secondEntityName = response['dataResult']['entities'][secondentityTypeID]
+								var chartNumber = y + 1
+								var chartName = displayName
+								var chartColumnName = entityName + " - " + secondEntityName
+							}
+							else if (splitEntities.length > 1) {
+								var dummyKey = splitEntities.shift()
+								var secondEntityString = splitEntities.join(", ");
+								var chartNumber = y + 1
+								var chartName = displayName
+								var chartColumnName = entityName + " - " + secondEntityString
+							}
+							else {
+								var chartNumber = y + 1
+								var chartName = displayName
+								var chartColumnName = entityName
+							}
+						}
+				
+						colIndex = chartData.addColumn('number', chartColumnName);	
+						for (i in apiResponse[entity]) {
+							if (entityPerChartCount == 1) {
+								var dateTimeUTC = new Date(apiResponse[entity][i][0]);
+								var localDateTime = dateTimeUTC.toLocaleString();
+								chartData.addRow([localDateTime,apiResponse[entity][i][1]]);
+							}
+							else {
+								rowInt = parseInt(i) //make sure i is a integer (something weird with setCell method) 
+								chartData.setCell(rowInt,colIndex,apiResponse[entity][i][1]);
+							}
+						}
+						
+						//Text Box Value determines how many Entities to put on each chart 
+						switch (entityType){
+						case "host":
+							var entitiesPerChartValue = document.getElementById('hostEntitiesPerChart').value
+							break;
+						case "process":
+							var entitiesPerChartValue = document.getElementById('processEntitiesPerChart').value
+							break;
+						case "service":
+							var entitiesPerChartValue = document.getElementById('serviceEntitiesPerChart').value
+							break;
+						}		
+						if (entityPerChartCount == entitiesPerChartValue || totalEntityCount == entityKeys.length){
+							// After data is added to chartData Data Table, build new div to place chart
+							// then drawChart 
+							chartCount++ // used to name each chart invidually 
+							chartName = chartName + " - "+chartCount
+							reportDiv = document.getElementById("dataChart")
+							reportDiv.innerHTML = reportDiv.innerHTML + "<div id=\"" + chartName + "\"></div>"
+							console.log("Entering Draw Chart...")
+							chartURI = drawChart(chartName,chartData);
+													
+							//Add download Link below Chart 
+							console.log("Adding Chart Link...")
+							var newChart = document.getElementById(chartName)
+							var data = chartURI.replace(/^data:image\/\w+;base64,/, "");
+							var downloadLink = "data:application/octet-stream;base64," + data
+							
+							downloadLinkHTML = document.createElement('a');
+							downloadLinkHTML.setAttribute("href",downloadLink)
+							downloadLinkHTML.setAttribute("download",chartName+".png")
+							downloadLinkHTML.setAttribute("style","color: white;")
+							downloadLinkHTML.setAttribute("class","chartDownloadLink")
+							downloadLinkHTML.innerHTML = "<center>Download Link</center>"
+							newChart.appendChild(downloadLinkHTML)
+							
+							//start with next batch of entities 
+							var chartData = new google.visualization.DataTable();
+							chartData.addColumn('string', 'date');
+							entityPerChartCount = 0
+						}
 					}
 				}
 			});

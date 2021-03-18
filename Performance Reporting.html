@@ -1,5 +1,15 @@
 <html>
     <style>
+        /* unvisited link */
+        a:link {
+          color: white;
+        }
+
+        /* visited link */
+        a:visited {
+          color: white;
+        }
+
         input.invalid {
             border: 3px solid red;
         }
@@ -12,16 +22,18 @@
             color : #fff
         }
 
-        #loadingSection.hide, #mainSection.hide, #hostMetricsLabel.hide, #processMetricsLabel.hide, #serviceMetricsLabel.hide, #hostMetricsSection.hide, #processMetricsSection.hide, #serviceMetricsSection.hide, #timeSection.hide, #reportSection.hide, #chartButton.hide, #tableButton.hide, #dataTable.hide, #dataChart.hide, #downloadAllButtonCell.hide, #chartOptions.hide {
+        #normalTimeSection.hide, #relativeTimeSection.hide, #loadingSection.hide, #mainSection.hide, #hostMetricsLabel.hide, #processMetricsLabel.hide, #serviceMetricsLabel.hide,
+        #hostMetricsSection.hide, #processMetricsSection.hide, #serviceMetricsSection.hide, #timeSection.hide, #reportSection.hide, #chartButton.hide, #tableButton.hide, #dataTable.hide, #dataChart.hide, #downloadAllButtonCell.hide, #chartOptions.hide {
             display: none;
         }
 
-        #loadingSection.show, #mainSection.show, #hostMetricsLabel.show, #processMetricsLabel.show, #serviceMetricsLabel.show, #hostMetricsSection.show, #processMetricsSection.show, #serviceMetricsSection.show, #timeSection.show, #reportSection.show, #chartButton.show, #tableButton.show, #dataTable.show, #dataChart.show, #downloadAllButtonCell.show, #chartOptions.show {
+        #normalTimeSection.show, #relativeTimeSection.show, #loadingSection.show, #mainSection.show, #hostMetricsLabel.show, #processMetricsLabel.show, #serviceMetricsLabel.show,
+        #hostMetricsSection.show, #processMetricsSection.show, #serviceMetricsSection.show, #timeSection.show, #reportSection.show, #chartButton.show, #tableButton.show, #dataTable.show, #dataChart.show, #downloadAllButtonCell.show, #chartOptions.show {
             display: block;
         }
     </style>
     <head>
-        <title>Performance Reporting Tool - v1 Timeseries</title>
+        <title>Performance Reporting Tool - v2 Metrics</title>
         <!--Google CDN for jQuery -->
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
         <!--JS Zip to download Zip File -->
@@ -76,8 +88,8 @@
                                 var fullWSCount = 0
                                 for (var aggLength=0; aggLength<selectedAggList.length; aggLength++) { // Run through selected aggregations
                                     var aggregationSelectionVal = selectedAggList[aggLength].value;
-                                    console.log("Start Building " + fullMetricTableNames[table]+"-"+ aggregationSelectionVal + " Temp WorkSheet...")
-                                    var tmpTable = document.getElementById(fullMetricTableNames[table]+"-"+aggregationSelectionVal)
+                                    console.log("Start Building " + fullMetricTableNames[table]+":"+ aggregationSelectionVal.toLowerCase() + " Temp WorkSheet...")
+                                    var tmpTable = document.getElementById(fullMetricTableNames[table]+":"+aggregationSelectionVal.toLowerCase())
                                     if (tmpTable.rows.length > 2){
                                         if (aggLength == 0) {
                                             fullWS = XLSX.utils.table_to_sheet(tmpTable, {dateNF: 'MM/DD/YYYY HH:mm:ss'})
@@ -225,18 +237,18 @@
                 </tr>
             <table id="hostMetricList">
                 <tr>
-                    <td><pre><input type="checkbox" checked="true" value="com.dynatrace.builtin:host.mem.availablepercentage"><label>Host Memory Available %</label></pre></td><td><pre><select id="com.dynatrace.builtin:host.mem.availablepercentageAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
+                    <td><pre><input type="checkbox" checked="true" value="builtin:host.mem.usage"><label>Host Memory Usage %</label></pre></td><td><pre><select id="builtin:host.mem.usageAgg" multiple="true" size="3"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option></select></pre></td>
                 </tr>
                 <tr>
-                    <td><pre><input type="checkbox" value="com.dynatrace.builtin:host.nic.bytesreceived"><label>Host Bytes Received / Sec</label></pre></td><td><pre><select id="com.dynatrace.builtin:host.nic.bytesreceivedAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
-                    <td><pre><input type="checkbox" value="com.dynatrace.builtin:host.nic.bytessent"><label>Host Bytes Sent / Sec</label></pre></td><td><pre><select id="com.dynatrace.builtin:host.nic.bytessentAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
+                    <td><pre><input type="checkbox" value="builtin:host.nic.bytesreceived"><label>Host Bytes Received / Sec</label></pre></td><td><pre><select id="builtin:host.nic.bytesreceivedAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
+                    <td><pre><input type="checkbox" value="builtin:host.nic.bytessent"><label>Host Bytes Sent / Sec</label></pre></td><td><pre><select id="builtin:host.nic.bytessentAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
                 </tr>
                 <tr>
-                    <td><pre><input type="checkbox" checked="true" value="com.dynatrace.builtin:host.cpu.system"><label>Host CPU System %</label></pre></td><td><pre><select id="com.dynatrace.builtin:host.cpu.systemAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
-                    <td><pre><input type="checkbox" value="com.dynatrace.builtin:host.cpu.idle"><label>Host CPU Idle %</label></pre></td><td><pre><select id="com.dynatrace.builtin:host.cpu.idleAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
-                    <td><pre><input type="checkbox" value="com.dynatrace.builtin:host.cpu.iowait"><label>Host CPU I/O Wait %</label></pre></td><td><pre><select id="com.dynatrace.builtin:host.cpu.iowaitAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
-                    <td><pre><input type="checkbox" value="com.dynatrace.builtin:host.cpu.other"><label>Host CPU Other %</label></pre></td><td><pre><select id="com.dynatrace.builtin:host.cpu.otherAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
-                    <td><pre><input type="checkbox" value="com.dynatrace.builtin:host.cpu.steal"><label>Host CPU Steal %</label></pre></td><td><pre><select id="com.dynatrace.builtin:host.cpu.stealAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
+                    <td><pre><input type="checkbox" checked="true" value="builtin:host.cpu.system"><label>Host CPU System %</label></pre></td><td><pre><select id="builtin:host.cpu.systemAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
+                    <td><pre><input type="checkbox" value="builtin:host.cpu.idle"><label>Host CPU Idle %</label></pre></td><td><pre><select id="builtin:host.cpu.idleAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
+                    <td><pre><input type="checkbox" value="builtin:host.cpu.iowait"><label>Host CPU I/O Wait %</label></pre></td><td><pre><select id="builtin:host.cpu.iowaitAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
+                    <td><pre><input type="checkbox" value="builtin:host.cpu.other"><label>Host CPU Other %</label></pre></td><td><pre><select id="builtin:host.cpu.otherAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
+                    <td><pre><input type="checkbox" value="builtin:host.cpu.steal"><label>Host CPU Steal %</label></pre></td><td><pre><select id="builtin:host.cpu.stealAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
                 </tr>
             </table>
             <hr>
@@ -308,44 +320,65 @@
                 <tr>
                     <td><h3><pre>Input Start & End Dates and Times</pre></h3></td>
                 </tr>
-                </tr>
-                    <td><button id="lastOneHour" type="submit">Last 1 Hour</button></td>
-                </tr>
-                <tr>
-                    <td colspan="3"><center><pre style="background-color: red; font-weight: bold;">NOTE: If the Month and Day are disabled, try removing the Year Value to enable editing.</pre></center></td>
-                </tr>
-                <tr>
-                    <td><pre>Start Month :   <input type="text" id="startMonth" placeholder=" 01"></pre></td>
-                    <td><pre>   Start Day   :  <input type="text" id="startDay" placeholder=" 01"></pre></td>
-                    <td><pre>   Start Year  : <input type="text" id="startYear" placeholder=" 2020"></pre></td>
-                </tr>
-                <tr>
-                    <td><pre>Start Hour  :   <input type="text" id="startHour" placeholder=" 00"></pre></td>
-                    <td><pre>   Start Minute:  <input type="text" id="startMinute" placeholder=" 00"></pre></td>
-                    <td><pre>   Start Second: <input type="text" id="startSecond" placeholder=" 00"></pre></td>
-                </tr>
             </table>
-            </br></br>
-            <table>
-                <tr>
-                    <td><pre>End Month   :   <input type="text" id="endMonth" placeholder=" 01"></pre></td>
-                    <td><pre>   End Day   :  <input type="text" id="endDay" placeholder=" 01"></pre></td>
-                    <td><pre>   End Year  :  <input type="text" id="endYear" placeholder=" 2020"></pre></td>
-                </tr>
-                <tr>
-                    <td><pre>End Hour    :   <input type="text" id="endHour" placeholder=" 23"></pre></td>
-                    <td><pre>   End Minute:  <input type="text" id="endMinute" placeholder=" 59"></pre></td>
-                    <td><pre>   End Second:  <input type="text" id="endSecond" placeholder=" 59"></pre></td>
-                </tr>
-            </table>
-            <table>
-                <tr>
-                    <td><button id="validateTimeButton" type="submit">Validate Time</button></td>
-                </tr>
-            </table>
+            <div id="relativeTimeSection" class="show">
+                <table>
+                    <tr>
+                        <td colspan="3"><center><pre style="background-color: red; font-weight: bold;">NOTE: Leave Relative Time Text Box Blank to use time entry table below</pre></center></td>
+                    </tr>
+                    <tr>
+                        <td><pre>Relative Time :   <input type="text" id="relativeTime" value="now-2w"></pre></td>
+                        <td><pre><a href="https://www.dynatrace.com/support/help/shortlink/api-metrics-v2-get-datapoints#parameters" >"relative time" docs</a></pre></td>
+                    </tr>
+                </table>
+            </div>
+            <div id="normalTimeSection" class="hide">
+                <table>
+                    </tr>
+                        <td><button id="lastOneHour" type="submit">Last 1 Hour</button></td>
+                    </tr>
+                    <tr>
+                        <td colspan="3"><center><pre style="background-color: red; font-weight: bold;">NOTE: If the Month and Day are disabled, try removing the Year Value to enable editing.</pre></center></td>
+                    </tr>
+                    <tr>
+                        <td><pre>Start Month :   <input type="text" id="startMonth" placeholder=" 01"></pre></td>
+                        <td><pre>   Start Day   :  <input type="text" id="startDay" placeholder=" 01"></pre></td>
+                        <td><pre>   Start Year  : <input type="text" id="startYear" placeholder=" 2020"></pre></td>
+                    </tr>
+                    <tr>
+                        <td><pre>Start Hour  :   <input type="text" id="startHour" placeholder=" 00"></pre></td>
+                        <td><pre>   Start Minute:  <input type="text" id="startMinute" placeholder=" 00"></pre></td>
+                        <td><pre>   Start Second: <input type="text" id="startSecond" placeholder=" 00"></pre></td>
+                    </tr>
+                </table>
+                </br></br>
+                <table>
+                    <tr>
+                        <td><pre>End Month   :   <input type="text" id="endMonth" placeholder=" 01"></pre></td>
+                        <td><pre>   End Day   :  <input type="text" id="endDay" placeholder=" 01"></pre></td>
+                        <td><pre>   End Year  :  <input type="text" id="endYear" placeholder=" 2020"></pre></td>
+                    </tr>
+                    <tr>
+                        <td><pre>End Hour    :   <input type="text" id="endHour" placeholder=" 23"></pre></td>
+                        <td><pre>   End Minute:  <input type="text" id="endMinute" placeholder=" 59"></pre></td>
+                        <td><pre>   End Second:  <input type="text" id="endSecond" placeholder=" 59"></pre></td>
+                    </tr>
+                </table>
+                <table>
+                    <tr>
+                        <td><button id="validateTimeButton" type="submit">Validate Time</button></td>
+                    </tr>
+                </table>
+            </div>
         </div>
         </br></br>
         <div id="reportSection" class="hide">
+            <table>
+                <tr>
+                    <td><pre>Data Resolution: <input type="text" id="dataResolution"></pre></td>
+                    <td><pre><a href="https://www.dynatrace.com/support/help/shortlink/api-metrics-v2-get-datapoints#parameters" >"resolution" docs</a></pre></td>
+                </tr>
+            </table>
             <table>
                 <tr>
                     <td><pre><input type="checkbox" id="buildCharts" checked="true"><label>Build Charts?</label></pre></td>
@@ -412,6 +445,7 @@
         validEntitiesPerChart = true
 
         var validTime = false
+        var useRelativeTime = false
         var allEntityIDNameArr = [] //used to capture all Entity ID & Names to create URLs for Report Info Section
 
         $('#buildCharts').on('click', function() {
@@ -589,6 +623,22 @@
 
         });
         // End Show Metric Type Section
+
+        $('#relativeTime').on('input', function(){
+            var relTimeSection = document.getElementById("relativeTimeSection");
+            var normTimeSection = document.getElementById("normalTimeSection");
+            var relTimeInput=$(this);
+            if (relTimeInput.val() == "") {
+                normTimeSection.setAttribute("class","show");
+                validTime = false
+                useRelativeTime = false
+            }
+            else {
+                normTimeSection.setAttribute("class","hide");
+                validTime = true
+                useRelativeTime = true
+            }
+        });
 
         //Start Date Time Validations
         //Start Start Date Time Validations
@@ -915,6 +965,8 @@
                 var inputProcessTagValue=$('#processTag').val();
                 var inputServiceIDValue=$('#serviceID').val();
                 var inputServiceTagValue=$('#serviceTag').val();
+                var dataResolution=$('#dataResolution').val();
+                var relativeTime=$('#relativeTime').val();
 
                 var startTimeUTC = calculateStartTime();
                 var endTimeUTC = calculateEndTime();
@@ -933,25 +985,25 @@
                 console.log("Start Time : " + localDateTimeStart + " : " + startTimeUTC)
                 console.log("End Time   : " + localDateTimeEnd + " : " + endTimeUTC)
 
-                //check if timeframe is smaller than 6 months and not backwards
-                if (timeDelta > 0 && timeDelta <= 14342400000) {
+                //check if timeframe is smaller than 6 months and not backwards or using relative time frame
+                if ((timeDelta > 0 && timeDelta <= 14342400000) || useRelativeTime) {
 
                     if (collectHostMetrics == true) {
                         hostMetricsList = findMetrics("host");
                         //hostMetricsLabel.setAttribute("class","show");
-                        collectDataAndBuildCharts("host",inputURLValue,inputTokenValue,inputHostIDValue,inputHostTagValue,startTimeUTC,endTimeUTC,hostMetricsList)
+                        collectDataAndBuildCharts("host",inputURLValue,inputTokenValue,inputHostIDValue,inputHostTagValue,startTimeUTC,endTimeUTC,hostMetricsList,dataResolution, useRelativeTime, relativeTime)
                     }
 
                     if (collectProcessMetrics == true) {
                         processMetricsList = findMetrics("process");
                         //processMetricsLabel.setAttribute("class","show");
-                        collectDataAndBuildCharts("process",inputURLValue,inputTokenValue,inputProcessIDValue,inputProcessTagValue,startTimeUTC,endTimeUTC,processMetricsList)
+                        collectDataAndBuildCharts("process",inputURLValue,inputTokenValue,inputProcessIDValue,inputProcessTagValue,startTimeUTC,endTimeUTC,processMetricsList,dataResolution)
                     }
 
                     if (collectServiceMetrics == true) {
                         serviceMetricsList = findMetrics("service");
                         //serviceMetricsLabel.setAttribute("class","show");
-                        collectDataAndBuildCharts("service",inputURLValue,inputTokenValue,inputServiceIDValue,inputServiceTagValue,startTimeUTC,endTimeUTC,serviceMetricsList)
+                        collectDataAndBuildCharts("service",inputURLValue,inputTokenValue,inputServiceIDValue,inputServiceTagValue,startTimeUTC,endTimeUTC,serviceMetricsList,dataResolution)
                     }
 
                     createReportInfo(inputURLValue,localDateTimeStart,startTimeUTC,localDateTimeEnd,endTimeUTC)
@@ -1067,84 +1119,65 @@
         }
 
         //Gather Metrics & Build out HTML tables for different Entity Types
-        function collectDataAndBuildCharts(entityType,dynatraceURL,token,entityTypeID,entityTypeTag,startTime,endTime,entityTypeMetricsList) {
+        function collectDataAndBuildCharts(entityType,dynatraceURL,token,entityTypeID,entityTypeTag,startTime,endTime,entityTypeMetricsList,dataResolution, useRelativeTime, relativeTime) {
             console.log("Gathering " + entityType + " metrics ...")
 
             entityTypeMetricID = entityType + "Metrics"
             dvTable = document.getElementById(entityTypeMetricID);
 
             for (metricIDNum in entityTypeMetricsList) {
-                var dynatraceMetricID = entityTypeMetricsList[metricIDNum]
-
-                var dtURL = ""
-
-                if (entityTypeID != "") {
-                    var entityList = ""
-                    entityTypeIDList = entityTypeID.split(",")
-
-                    if (entityTypeIDList.length > 1) {
-                        for (i in entityTypeIDList){
-                            entityList += "&entity=" + entityTypeIDList[i].trim()
+                var dynatraceMetricID = entityTypeMetricsList[metricIDNum];
+                var dtURL = "";
+                switch (dynatraceMetricID) {
+                    case "com.dynatrace.builtin:service.errorcounthttp4xx":
+                    case "com.dynatrace.builtin:service.errorcounthttp5xx" :
+                        dtURL += dynatraceURL + "/api/v2/metrics/query?metricSelector=" + dynatraceMetricID
+                        break;
+                    default :
+                        var metricAgg = dynatraceMetricID + "Agg"
+                        var aggregationSelection = document.getElementById(metricAgg);
+                        var selectedAggList = aggregationSelection.selectedOptions //get Selected Options
+                        var aggregationURLPiece = ":("
+                        for (var aggLength=0; aggLength<selectedAggList.length; aggLength++) { // Run through selected aggregations
+                            var aggregationSelectionVal = selectedAggList[aggLength].value;
+                            aggregationURLPiece += aggregationSelectionVal + ","
                         }
-                    }
-                    else {
-                        entityList += "&entity=" + entityTypeID
-                    }
-                    dtURL += dynatraceURL + "/api/v1/timeseries/" + dynatraceMetricID + "?startTimestamp=" + startTime + "&endTimestamp=" + endTime + entityList + "&includeData=true"
+                        aggregationURLPiece = aggregationURLPiece.slice(0,-1)
+                        aggregationURLPiece += ")"
+                        dtURL += dynatraceURL + "/api/v2/metrics/query?metricSelector=" + dynatraceMetricID + aggregationURLPiece
+                        break;
                 }
-                else if (entityTypeTag != "") {
-                    var tagList = ""
-                    entityTypeTagList = entityTypeTag.split(",")
 
-                    if (entityTypeTagList.length > 1) {
-                        for (i in entityTypeTagList){
-                            tagList += "&tag=" + entityTypeTagList[i].trim()
-                        }
-                    }
-                    else {
-                        tagList += "&tag=" + entityTypeTag
-                    }
-                    dtURL += dynatraceURL + "/api/v1/timeseries/" + dynatraceMetricID + "?startTimestamp=" + startTime + "&endTimestamp=" + endTime + tagList + "&includeData=true"
+                if (dataResolution != "") {
+                    dtURL += "&resolution=" + dataResolution
+                }
+
+                if (useRelativeTime){
+                    dtURL += "&from=" + relativeTime
                 }
                 else {
-                dtURL += dynatraceURL + "/api/v1/timeseries/" + dynatraceMetricID + "?startTimestamp=" + startTime + "&endTimestamp=" + endTime + "&includeData=true"
+                    dtURL += "&from=" + startTime + "&to=" + endTime
+                }
+
+                if (entityTypeID != "") {
+                    var entityIDList = "&entitySelector=entityId(" + entityTypeID + ")";
+                    dtURL += entityIDList;
+                }
+                else if (entityTypeTag != "") {
+                    var tagList = "&entitySelector=tag(" + entityTypeTag + ")"
+                    dtURL += tagList;
                 }
 
                 var mainMetricTable = document.createElement("table")
                 mainMetricTable.id = dynatraceMetricID
-
                 dvTable.appendChild(mainMetricTable);
 
-                switch (dynatraceMetricID) {
-                    case "com.dynatrace.builtin:service.errorcounthttp4xx":
-                    case "com.dynatrace.builtin:service.errorcounthttp5xx" :
-                        var metricTableRow = mainMetricTable.insertRow(-1)
-                        gatherMetricsRequest(entityType,dtURL,token,dynatraceMetricID,metricTableRow);
-                        break;
-                    default :
-                        var baseDTURL = dtURL
-                        var metricAgg = dynatraceMetricID + "Agg"
-                        var aggregationSelection = document.getElementById(metricAgg);
-                        var selectedAggList = aggregationSelection.selectedOptions //get Selected Options
-                        for (var aggLength=0; aggLength<selectedAggList.length; aggLength++) { // Run through selected aggregations
-                            var aggregationSelectionVal = selectedAggList[aggLength].value;
-                            console.log(dynatraceMetricID +" : "+ aggregationSelectionVal + " - Start")
-
-                            if(aggregationSelectionVal != "") {
-                                var metricTableRow = mainMetricTable.insertRow(-1)
-                                var fullDTURL = baseDTURL + "&aggregationType="+aggregationSelectionVal
-                            }
-                            gatherMetricsRequest(entityType,fullDTURL,token,dynatraceMetricID,metricTableRow);
-                            console.log(dynatraceMetricID +" : "+ aggregationSelectionVal + " - Done")
-                            console.log("Being Next Aggregation...")
-                        }
-                        break;
-                }
+                console.log("Gathering data for metric ID : " + dynatraceMetricID);
+                gatherMetricsRequest(entityType,dtURL,token,dynatraceMetricID,mainMetricTable);
             }
-
         }
 
-        function gatherMetricsRequest(entityType,fullDTURL,token,dynatraceMetricID,metricTableRow) {
+        function gatherMetricsRequest(entityType,fullDTURL,token,dynatraceMetricID,mainMetricTable) {
             var entityKeys = []
             var settings = {
                 "async": false,
@@ -1161,245 +1194,80 @@
 
             var request = $.ajax(settings);
             request.done(function (response) {
+                aggregationResponses = response['result'];
+                for (var x = 0; x < aggregationResponses.length; x++) {
+                    console.log("Processing data for : " + aggregationResponses[x]['metricId']);
+                    var metricTableRow = mainMetricTable.insertRow(-1);
+                    console.log("Building HTML Tables...")
+                    var table = document.createElement("table")
+                    table.border = "1";
+                    table.id = aggregationResponses[x]['metricId']
 
-                var apiResponse = response['dataResult']['dataPoints'];
-                var entityTypeName = ""
-                var unit = response['dataResult']['unit']
-                var displayName = response['displayName']
-                var aggregation = response['dataResult']['aggregationType'];
-                var allEntitiesInResponse = response['dataResult']['entities']
+                    var tblColumnCount = 2
+                    var tblRow = table.insertRow(-1)
 
-                // to gather all Entity IDs & Names for Report Info
-                for (keys in allEntitiesInResponse) {
-                    keyID = keys.toString();
-                    valueName = allEntitiesInResponse[keys]
-                    allEntityIDNameArr.push([keyID,valueName])
-                }
-
-                for (keys in apiResponse) {
-                    var keyString = keys.toString();
-                    entityKeys.push(keyString);
-                }
-                console.log("All Entity Keys : " + entityKeys)
-
-                console.log("Building HTML Tables...")
-                var table = document.createElement("table")
-                table.border = "1";
-                if (typeof aggregation !== 'undefined') {
-                    table.id = dynatraceMetricID + "-" + aggregation
-                }
-                else {
-                    table.id = dynatraceMetricID + "-NoAgg"
-                }
-
-                var tblColumnCount = 2
-                var tblRow = table.insertRow(-1)
-
-                for (var x = 0; x < entityKeys.length; x++) {
-                    var entity = entityKeys[x]
-
-                    splitEntities = entity.split(', ');
-                    entityTypeNameID = splitEntities[0]
-                    entityName = response['dataResult']['entities'][entityTypeNameID]
-
-                    var headerCell1 = document.createElement("TH");
-                    if (typeof aggregation !== 'undefined') {
-                        if(splitEntities.length > 1 && firstCharIsCapital(splitEntities[1])) {
-                            var secondentityTypeID = splitEntities[1]
-                            var secondEntityName = response['dataResult']['entities'][secondentityTypeID]
-                            headerCell1.innerHTML = "<pre>" + entityTypeNameID + " - " + entityName + " - " + secondEntityName + " : " + displayName + " : " + aggregation + "</pre>";
+                    data = aggregationResponses[x]['data']
+                    for (var dataIndex = 0; dataIndex < data.length; dataIndex++) {
+                        completeEntityID = ""
+                        dimensions = data[dataIndex]['dimensions'];
+                        for (var dimIndex = 0; dimIndex < dimensions.length; dimIndex++) {
+                            completeEntityID += dimensions[dimIndex] + "-"
                         }
-                        else if (splitEntities.length > 1) {
-                            var dummyKey = splitEntities.shift();
-                            var secondEntityString = splitEntities.join(", ");
-                            headerCell1.innerHTML = "<pre>" + entityTypeNameID + " - " + entityName + " - " + secondEntityString + " : " + displayName + " : " + aggregation + "</pre>";
-                        }
-                        else {
-                            headerCell1.innerHTML = "<pre>" + entityTypeNameID + " - " + entityName + " : " + displayName + " : " + aggregation + "</pre>";
-                        }
-                    }
-                    else {
-                        if(splitEntities.length > 1 && firstCharIsCapital(splitEntities[1])) {
-                            var secondentityTypeID = splitEntities[1]
-                            var secondEntityName = response['dataResult']['entities'][secondentityTypeID]
-                            headerCell1.innerHTML = "<pre>" + entityTypeNameID + " - " + entityName + " - " + secondEntityName + " : " + displayName + "</pre>";
-                        }
-                        else if (splitEntities.length > 1) {
-                            var dummyKey = splitEntities.shift()
-                            var secondEntityString = splitEntities.join(", ");
-                            headerCell1.innerHTML = "<pre>" + entityTypeNameID + " - " + entityName + " - " + secondEntityString + " : " + displayName + "</pre>";
-                        }
-                        else {
-                            headerCell1.innerHTML = "<pre>" + entityTypeNameID + " - " + entityName + " : " + displayName + "</pre>";
-                        }
-                    }
-                    tblRow.appendChild(headerCell1);
-                    var headerCell2 = document.createElement("TH");
-                    headerCell2.innerHTML = "";
-                    tblRow.appendChild(headerCell2);
 
-                    tblRow = table.insertRow(-1)
+                        completeEntityID = completeEntityID.slice(0,-1)
 
-                    var headerCell3 = document.createElement("TH");
-                    headerCell3.innerHTML = "<pre>Time</pre>"
-                    tblRow.appendChild(headerCell3);
-                    var headerCell4 = document.createElement("TH");
-                    headerCell4.innerHTML = "<pre>" + unit + "</pre>";
-                    tblRow.appendChild(headerCell4);
-
-
-                    for (i in apiResponse[entity]) {
+                        var headerCell1 = document.createElement("TH");
+                        headerCell1.innerHTML = "<pre>" + completeEntityID + " " + aggregationResponses[x]['metricId'] + "</pre>";
+                        // add header row with entity & metric info
+                        tblRow.appendChild(headerCell1);
+                        var headerCell2 = document.createElement("TH");
+                        headerCell2.innerHTML = "";
+                        tblRow.appendChild(headerCell2);
+                        // add new row for column headers
                         tblRow = table.insertRow(-1)
+                        var headerCell3 = document.createElement("TH");
+                        headerCell3.innerHTML = "<pre>Time</pre>"
+                        tblRow.appendChild(headerCell3);
+                        var headerCell4 = document.createElement("TH");
+                        headerCell4.innerHTML = "<pre>" + "Value" + "</pre>";
+                        tblRow.appendChild(headerCell4);
+                        // TODO Add data to table
+                        timestamps = data[dataIndex]['timestamps']
+                        values = data[dataIndex]['values']
 
-                        var dateTimeUTC = new Date(apiResponse[entity][i][0]);
-                        var localDateTime = dateTimeUTC.toLocaleString();
+                        for (var measurementIndex = 0; measurementIndex < timestamps.length; measurementIndex++) {
+                            tblRow = table.insertRow(-1)
 
+                            var dateTimeUTC = new Date(timestamps[measurementIndex]);
+                            var localDateTime = dateTimeUTC.toLocaleString();
+
+                            var cell1 = tblRow.insertCell(-1);
+                            cell1.innerHTML = "<center><pre>" + localDateTime + "</pre></center>"
+
+                            var cell2 = tblRow.insertCell(-1);
+                            if (values[measurementIndex] != null) {
+                                cell2.setAttribute("data-type","Number");
+                                cell2.setAttribute("data-value",values[measurementIndex]);
+                                cell2.innerHTML = "<pre>" + values[measurementIndex] + "</pre>"
+                            }
+                            else {
+                                cell2.setAttribute("data-type","String");
+                                cell2.setAttribute("data-value","null");
+                                cell2.innerHTML = "<pre>" + "null" + "</pre>"
+                            }
+                        }
+
+                        // add space row between each entity of the same metric & aggregation
+                        tblRow = table.insertRow(-1)
                         var cell1 = tblRow.insertCell(-1);
-                        cell1.innerHTML = "<center><pre>" + localDateTime + "</pre></center>"
-
+                        cell1.innerHTML = " "
                         var cell2 = tblRow.insertCell(-1);
-                        if (apiResponse[entity][i][1] != null) {
-                            cell2.setAttribute("data-type","Number");
-                            cell2.setAttribute("data-value",apiResponse[entity][i][1]);
-                            cell2.innerHTML = "<pre>" + apiResponse[entity][i][1] + "</pre>"
-                        }
-                        else {
-                            cell2.setAttribute("data-type","String");
-                            cell2.setAttribute("data-value","null");
-                            cell2.innerHTML = "<pre>" + "null" + "</pre>"
-                        }
+                        cell2.innerHTML = " "
+                        tblRow = table.insertRow(-1)
                     }
-                    tblRow = table.insertRow(-1)
-                    var cell1 = tblRow.insertCell(-1);
-                    cell1.innerHTML = " "
-                    var cell2 = tblRow.insertCell(-1);
-                    cell2.innerHTML = " "
-                    tblRow = table.insertRow(-1)
-                }
-                //Add new HTML Table to existing tables
-                metricTableCell = metricTableRow.insertCell(-1)
-                metricTableCell.innerHTML = table.outerHTML
-
-                //build out charts with data from apiResponse
-
-                var buildCharts = document.getElementById("buildCharts")
-                if(buildCharts.checked == true){
-                    //set up new chartData DataTable for each entity
-                    var chartData = new google.visualization.DataTable();
-                    chartData.addColumn('string', 'Date');
-
-                    console.log("Entering Draw Chart Flow...")
-
-                    var entityPerChartCount = 0
-                    var totalEntityCount = 0
-                    var chartCount = 0
-
-                    for (var y = 0; y < entityKeys.length; y++) {
-
-                        var entity = entityKeys[y]
-                        splitEntities = entity.split(', ');
-                        entityTypeNameID = splitEntities[0]
-                        entityName = response['dataResult']['entities'][entityTypeNameID]
-                        entityPerChartCount++
-                        totalEntityCount++
-
-                        if (typeof aggregation !== 'undefined') {
-                            if(splitEntities.length > 1 && firstCharIsCapital(splitEntities[1])) {
-                                var secondentityTypeID = splitEntities[1]
-                                var secondEntityName = response['dataResult']['entities'][secondentityTypeID]
-                                var chartName = displayName + " : " + aggregation
-                                var chartColumnName = entityName + " - " + secondEntityName
-                            }
-                            else if (splitEntities.length > 1) {
-                                var dummyKey = splitEntities.shift();
-                                var secondEntityString = splitEntities.join(", ");
-                                var chartNumber = y + 1
-                                var chartName = displayName + " : " + aggregation
-                                var chartColumnName = entityName + " - " + secondEntityString
-                            }
-                            else {
-                                var chartNumber = y + 1
-                                var chartName = displayName + " : " + aggregation
-                                var chartColumnName = entityName
-                            }
-                        }
-                        else {
-                            if(splitEntities.length > 1 && firstCharIsCapital(splitEntities[1])) {
-                                var secondentityTypeID = splitEntities[1]
-                                var secondEntityName = response['dataResult']['entities'][secondentityTypeID]
-                                var chartNumber = y + 1
-                                var chartName = displayName
-                                var chartColumnName = entityName + " - " + secondEntityName
-                            }
-                            else if (splitEntities.length > 1) {
-                                var dummyKey = splitEntities.shift()
-                                var secondEntityString = splitEntities.join(", ");
-                                var chartNumber = y + 1
-                                var chartName = displayName
-                                var chartColumnName = entityName + " - " + secondEntityString
-                            }
-                            else {
-                                var chartNumber = y + 1
-                                var chartName = displayName
-                                var chartColumnName = entityName
-                            }
-                        }
-
-                        colIndex = chartData.addColumn('number', chartColumnName);
-                        for (i in apiResponse[entity]) {
-                            if (entityPerChartCount == 1) {
-                                var dateTimeUTC = new Date(apiResponse[entity][i][0]);
-                                var localDateTime = dateTimeUTC.toLocaleString();
-                                chartData.addRow([localDateTime,apiResponse[entity][i][1]]);
-                            }
-                            else {
-                                rowInt = parseInt(i) //make sure i is a integer (something weird with setCell method)
-                                chartData.setCell(rowInt,colIndex,apiResponse[entity][i][1]);
-                            }
-                        }
-
-                        //Text Box Value determines how many Entities to put on each chart
-                        switch (entityType){
-                        case "host":
-                            var entitiesPerChartValue = document.getElementById('hostEntitiesPerChart').value
-                            break;
-                        case "process":
-                            var entitiesPerChartValue = document.getElementById('processEntitiesPerChart').value
-                            break;
-                        case "service":
-                            var entitiesPerChartValue = document.getElementById('serviceEntitiesPerChart').value
-                            break;
-                        }
-                        if (entityPerChartCount == entitiesPerChartValue || totalEntityCount == entityKeys.length){
-                            // After data is added to chartData Data Table, build new div to place chart
-                            // then drawChart
-                            chartCount++ // used to name each chart invidually
-                            chartName = chartName + " - "+chartCount
-                            reportDiv = document.getElementById("dataChart")
-                            reportDiv.innerHTML = reportDiv.innerHTML + "<div id=\"" + chartName + "\"></div>"
-                            console.log("Entering Draw Chart...")
-                            chartURI = drawChart(chartName,chartData);
-
-                            //Add download Link below Chart
-                            console.log("Adding Chart Link...")
-                            var newChart = document.getElementById(chartName)
-                            var data = chartURI.replace(/^data:image\/\w+;base64,/, "");
-                            var downloadLink = "data:application/octet-stream;base64," + data
-
-                            downloadLinkHTML = document.createElement('a');
-                            downloadLinkHTML.setAttribute("href",downloadLink)
-                            downloadLinkHTML.setAttribute("download",chartName+".png")
-                            downloadLinkHTML.setAttribute("style","color: white;")
-                            downloadLinkHTML.setAttribute("class","chartDownloadLink")
-                            downloadLinkHTML.innerHTML = "<center>Download Link</center>"
-                            newChart.appendChild(downloadLinkHTML)
-
-                            //start with next batch of entities
-                            var chartData = new google.visualization.DataTable();
-                            chartData.addColumn('string', 'date');
-                            entityPerChartCount = 0
-                        }
-                    }
+                    //Add new HTML Table to existing tables
+                    metricTableCell = metricTableRow.insertCell(-1)
+                    metricTableCell.innerHTML = table.outerHTML
                 }
             });
 

@@ -1,4 +1,4 @@
-# Dynatrace v1 TimeSeries API Performance Reporting Tool
+# Dynatrace v2 Metrics API Performance Reporting Tool
 
 ### Purpose
   This tool captures data using the Dynatrace API, with the ability to then export the data to Excel.

@@ -1,1628 +1,1628 @@
 <html>
-	<style>
-		input.invalid {
-			border: 3px solid red;
-		}
+    <style>
+        input.invalid {
+            border: 3px solid red;
+        }
 
-		input.valid {
-			border: 3px solid green;
-		}
-		body {
-			background-color : #2d2d2d;
-			color : #fff
-		}
-		
-		#loadingSection.hide, #mainSection.hide, #hostMetricsLabel.hide, #processMetricsLabel.hide, #serviceMetricsLabel.hide, #hostMetricsSection.hide, #processMetricsSection.hide, #serviceMetricsSection.hide, #timeSection.hide, #reportSection.hide, #chartButton.hide, #tableButton.hide, #dataTable.hide, #dataChart.hide, #downloadAllButtonCell.hide, #chartOptions.hide {
-			display: none;
-		}
-		
-		#loadingSection.show, #mainSection.show, #hostMetricsLabel.show, #processMetricsLabel.show, #serviceMetricsLabel.show, #hostMetricsSection.show, #processMetricsSection.show, #serviceMetricsSection.show, #timeSection.show, #reportSection.show, #chartButton.show, #tableButton.show, #dataTable.show, #dataChart.show, #downloadAllButtonCell.show, #chartOptions.show {
-			display: block;
-		}			
-	</style>
-	<head>
-		<title>Performance Reporting Tool - v1 Timeseries</title>
-		<!--Google CDN for jQuery --> 
-		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
-		<!--JS Zip to download Zip File -->
-		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.5/jszip.min.js"></script>
-		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jszip-utils/0.0.2/jszip-utils.min.js"></script>
-		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.8/FileSaver.min.js"></script>
-		<!--SheetsJS Libraries -->
-		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.15.2/shim.min.js"></script>
-		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.15.2/xlsx.full.min.js"></script>
-		<!--Google Charts Library-->
-		<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+        input.valid {
+            border: 3px solid green;
+        }
+        body {
+            background-color : #2d2d2d;
+            color : #fff
+        }
 
-		
-		<script>
-			google.charts.load("current", {packages:['line','corechart','table']});
-			google.charts.setOnLoadCallback(showPage);
-			
-			function showPage() {
-				document.getElementById("loadingSection").setAttribute("class","hide");
-				document.getElementById("mainSection").setAttribute("class","show");
-			}
-			
-			function tables2Excel (fullMetricTableNames, worksheetNames) {
-				console.log("Downloading Excel ...") 
-				var filename = "exportedReportData.xlsx"
-				var wb = XLSX.utils.book_new()
-				
-				for(table in fullMetricTableNames){
-					if (fullMetricTableNames[table] == "reportInfoTable") {
-						console.log("Start Building Report Info WorkSheet...")
-						var tableObj = document.getElementById(fullMetricTableNames[table])
-						var ws = XLSX.utils.table_to_sheet(tableObj, {dateNF : 'MM/DD/YYYY HH:mm:ss'});
-						XLSX.utils.book_append_sheet(wb, ws, worksheetNames[table]);
-						console.log("Completed Building Report Info WorkSheet...")
-					}
-					else {
-						switch (fullMetricTableNames[table]) {
-							case "com.dynatrace.builtin:service.errorcounthttp4xx":
-							case "com.dynatrace.builtin:service.errorcounthttp5xx": 
-								console.log("Start Building " + fullMetricTableNames[table] + " WorkSheet...")
-								tableObj = document.getElementById(fullMetricTableNames[table]+"-NoAgg")
-								var ws = XLSX.utils.table_to_sheet(tableObj, {dateNF : 'MM/DD/YYYY HH:mm:ss'});
-								XLSX.utils.book_append_sheet(wb, ws, worksheetNames[table]);
-								console.log("Completed Building " + fullMetricTableNames[table] + " WorkSheet...")
-							break;
-							default:
-								console.log("Start Building " + fullMetricTableNames[table] + " WorkSheet...")
-								var metricAgg = fullMetricTableNames[table] + "Agg"
-								var aggregationSelection = document.getElementById(metricAgg);
-								var selectedAggList = aggregationSelection.selectedOptions //get Selected Options
-								var fullWS
-								var fullWSCount = 0
-								for (var aggLength=0; aggLength<selectedAggList.length; aggLength++) { // Run through selected aggregations 
-									var aggregationSelectionVal = selectedAggList[aggLength].value;
-									console.log("Start Building " + fullMetricTableNames[table]+"-"+ aggregationSelectionVal + " Temp WorkSheet...")
-									var tmpTable = document.getElementById(fullMetricTableNames[table]+"-"+aggregationSelectionVal)
-									if (tmpTable.rows.length > 2){	
-										if (aggLength == 0) {
-											fullWS = XLSX.utils.table_to_sheet(tmpTable, {dateNF: 'MM/DD/YYYY HH:mm:ss'})
-											fullWSCount = fullWSCount + 1
-										}
-										else {
-											var tmpWS = XLSX.utils.table_to_sheet(tmpTable, {cellDates: true, dateNF: 'MM/DD/YYYY HH:mm:ss'})
-											var tmpJSON = XLSX.utils.sheet_to_json(tmpWS, {cellDates: true, dateNF: 'MM/DD/YYYY HH:mm:ss', blankrows: true})
-											XLSX.utils.sheet_add_json(fullWS,tmpJSON, {skipHeader: false, origin: -1, cellDates: true, dateNF: 'MM/DD/YYYY HH:mm:ss', blankrows: true});
-										}
-									}
-									else {
-										console.log("Table Length means no data. Not adding table to Work Sheet.")
-									}
-								}
-								if (fullWSCount >= 1){
-									XLSX.utils.book_append_sheet(wb, fullWS, worksheetNames[table]);
-								}
-								console.log("Completed Building " + fullMetricTableNames[table] + " WorkSheet...")
-								break;	
-						}
-					}
-				}
-				XLSX.writeFile(wb, filename, {compression:true})
-			}
-			//draws the charts from the data gathered by the API 
-			function drawChart(chartTitle,data) {
-				var nightModeBox = document.getElementById("chartsNightMode")
-				
-				var backgroundColor = "#2d2d2d";
-				var textColor = "white";
-				
-				if (nightModeBox.checked == false) {
-					textColor = "#2d2d2d";
-					backgroundColor = "white";
-				}
-				
-				var options = {
-					title : chartTitle,
-					width: '85%',
-					height: 600,
-					backgroundColor: backgroundColor,
-					aggregationTarget: 'category',
-					focusTarget: 'datum',
-					tooltip: {trigger: 'none'},
-					enableInteractivity: 'false',
-					hAxis: {textStyle: {color : textColor}},
-					vAxis: {textStyle: {color : textColor},
-							minValue: 0},
-					titleTextStyle: {color : textColor},
-					legend: { position: 'top',
-							 textStyle: {color : textColor},
-							 maxLines: 3
-							},
-					series: {
-						0: { color: '#4285F4' }, // DT blue
-						1: { color: '#6F2DA8' }, // DT Purple
-						2: { color: '#73BE28' }, // DT Green 
-						3: { color: '#FFFFFF' }, // White
-						4: { color: '#FF0000' }, // Red 
-						5: { color: '#FFFF00' }, // Yellow
-						6: { color: '#FF8C00' }, // Orange
-						7: { color: '#8B4513' } // Brown
-					}
-				};		
-				var chart = new google.visualization.LineChart(document.getElementById(chartTitle));
-				chart.draw(data,options);	
-				return chart.getImageURI();	
-			}
-			
-			//used to show correct buttons after report is generated
-			function showTable() {
-				document.getElementById("tableButton").setAttribute("class","hide");
-				document.getElementById("chartButton").setAttribute("class","show");
-				document.getElementById("dataTable").setAttribute("class","show");
-				document.getElementById("dataChart").setAttribute("class","hide");
-				document.getElementById("downloadAllButtonCell").setAttribute("class","hide");
-			}
-			
-			//used to show correct buttons after report is generated
-			function showChart() {
-				document.getElementById("tableButton").setAttribute("class","show");
-				document.getElementById("chartButton").setAttribute("class","hide");				
-				document.getElementById("dataTable").setAttribute("class","hide");
-				document.getElementById("dataChart").setAttribute("class","show");
-				document.getElementById("downloadAllButtonCell").setAttribute("class","show");
-			}			
-		</script>		
-	</head>
-	<body>
-		<table>
-			<tr><h2><center>Dynatrace v1 TimeSeries API Performance Reporting Tool</center></h2></tr>
-			<tr><center><pre>Purpose : This tool captures data using the Dynatrace API, with the ability to then export the data to Excel.</pre></center></tr>
+        #loadingSection.hide, #mainSection.hide, #hostMetricsLabel.hide, #processMetricsLabel.hide, #serviceMetricsLabel.hide, #hostMetricsSection.hide, #processMetricsSection.hide, #serviceMetricsSection.hide, #timeSection.hide, #reportSection.hide, #chartButton.hide, #tableButton.hide, #dataTable.hide, #dataChart.hide, #downloadAllButtonCell.hide, #chartOptions.hide {
+            display: none;
+        }
 
-			<tr><center><pre style='font-weight: bold;'>Usage : Input Dynatrace URL, API Token and select which metric types you would like to capture.</pre></center></tr>
-			<tr><center><pre style='font-weight: bold;'>Then select which Entity IDs or Tags to capture and the metrics. Enter the time and click validate time then "Run Report"</pre></center></tr>
-		</table>
-		</br>
-		<div id="loadingSection" class="show">
-			<h1><center>Loading...</center></h1>
-		</div>
-		<div id="mainSection" class="hide">
-			<table><tr><td><pre>Input your Dynatrace Environment URL:
-			Managed:    https://{your-domain}/e/{your-environment-id}
-			SaaS:       https://{your-environment-id}.live.dynatrace.com</pre></td></tr>
-			</table>
-			<br>
-			<table>
-				<tr>
-					<td><pre>Dynatrace Environment URL: <input type="text" id="dynatraceURL" size='89'></pre></td>
-				</tr>
-				<tr>
-					<td><pre>API Token                : <input type="text" id="dynatraceToken" size='89'></pre></td>
-				</tr>
-			</table>
-			<table>
-				<tr>
-					<td><pre><input type="checkbox" id="showHostMetricsSection"><label>Collect Data for Hosts </label></pre></td>
-				</tr>
-				<tr>
-					<td><pre><input type="checkbox" id="showProcessMetricsSection"><label>Collect Data for Processes	</label></pre></td>
-				</tr>
-				<tr>
-					<td><pre><input type="checkbox" id="showServiceMetricsSection"><label>Collect Data for Services	</label></pre></td>
-				</tr>
-			</table>
-		</div>
-		<hr>
-		<div id="hostMetricsSection" class="hide" style='background-color:#1396FE;'>
-			<table>
-				<tr>
-					<td><h3><pre>Input Filter For Host(s) & Select Metrics</pre></h3></td>
-				</tr>
-				<tr>
-					<td><pre>Put Host Entity IDs OR Tags into Correct Text Box Below Separated with a Comma. EX : HOST-B7A6F9EE9F366CB5</pre></td>
-				</tr>
-				<tr>
-					<td><pre>Use ctrl key to select multiple Aggregations. Min, Avg, Max Selected by Default.</pre></td>
-				</tr>
-				<tr>
-					<td><pre>Tag(s)		: <input type="text" id="hostTag"></pre></td>
-				</tr>
-				<tr>
-					<td><pre>Host ID(s)	: <input type="text" id="hostID"></pre></td>
-				</tr>
-			<table id="hostMetricList">
-				<tr>
-					<td><pre><input type="checkbox" checked="true" value="com.dynatrace.builtin:host.mem.availablepercentage"><label>Host Memory Available %</label></pre></td><td><pre><select id="com.dynatrace.builtin:host.mem.availablepercentageAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
-				</tr>
-				<tr>
-					<td><pre><input type="checkbox" value="com.dynatrace.builtin:host.nic.bytesreceived"><label>Host Bytes Received / Sec</label></pre></td><td><pre><select id="com.dynatrace.builtin:host.nic.bytesreceivedAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
-					<td><pre><input type="checkbox" value="com.dynatrace.builtin:host.nic.bytessent"><label>Host Bytes Sent / Sec</label></pre></td><td><pre><select id="com.dynatrace.builtin:host.nic.bytessentAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
-				</tr>
-				<tr>
-					<td><pre><input type="checkbox" checked="true" value="com.dynatrace.builtin:host.cpu.system"><label>Host CPU System %</label></pre></td><td><pre><select id="com.dynatrace.builtin:host.cpu.systemAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
-					<td><pre><input type="checkbox" value="com.dynatrace.builtin:host.cpu.idle"><label>Host CPU Idle %</label></pre></td><td><pre><select id="com.dynatrace.builtin:host.cpu.idleAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
-					<td><pre><input type="checkbox" value="com.dynatrace.builtin:host.cpu.iowait"><label>Host CPU I/O Wait %</label></pre></td><td><pre><select id="com.dynatrace.builtin:host.cpu.iowaitAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
-					<td><pre><input type="checkbox" value="com.dynatrace.builtin:host.cpu.other"><label>Host CPU Other %</label></pre></td><td><pre><select id="com.dynatrace.builtin:host.cpu.otherAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
-					<td><pre><input type="checkbox" value="com.dynatrace.builtin:host.cpu.steal"><label>Host CPU Steal %</label></pre></td><td><pre><select id="com.dynatrace.builtin:host.cpu.stealAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
-				</tr>
-			</table>
-			<hr>
-		</div>
-		<div id="processMetricsSection" class="hide">
-			<table>
-				<tr>
-					<td><h3><pre>Input Filter For Process(es) & Select Metrics</pre></h3></td>
-				</tr>
-				<tr>
-					<td><pre>Put Process Group Instance Entity IDs OR Tags in correct Text Box Below Separated with a Comma. EX : PROCESS_GROUP_INSTANCE-903A173E06288070</pre></td>
-				</tr>
-				<tr>
-					<td><pre>Use ctrl key to select multiple Aggregations. Min, Avg, Max Selected by Default.</pre></td>
-				</tr>
-				<tr>
-					<td><pre>Tag(s)				: <input type="text" id="processTag"></pre></td>
-				</tr>
-				<tr>
-					<td><pre>Process Group Instance ID(s)	: <input type="text" id="processID"></pre></td>
-				</tr>
-			</table>
-			<table id="processMetricList">
-				<tr>
-					<td><pre><input type="checkbox" checked="true" value="com.dynatrace.builtin:pgi.cpu.usage"><label>Process CPU %</label></pre></td><td><pre><select id="com.dynatrace.builtin:pgi.cpu.usageAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
-					<td><pre><input type="checkbox" checked="true" value="com.dynatrace.builtin:pgi.mem.usage"><label>Process Memory %</label></pre></td><td><pre><select id="com.dynatrace.builtin:pgi.mem.usageAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
-					<td><pre><input type="checkbox" value="com.dynatrace.builtin:pgi.suspension"><label>GC Suspension Time</label></pre></td><td><pre><select id="com.dynatrace.builtin:pgi.suspensionAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
-				</tr>
-				<tr>
-					<td><pre><input type="checkbox" value="com.dynatrace.builtin:pgi.jvm.garbagecollectioncount"><label>Java GC Count</label></pre></td><td><pre><select id="com.dynatrace.builtin:pgi.jvm.garbagecollectioncountAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
-					<td><pre><input type="checkbox" value="com.dynatrace.builtin:pgi.jvm.garbagecollectiontime"><label>Java GC Time</label></pre></td><td><pre><select id="com.dynatrace.builtin:pgi.jvm.garbagecollectiontimeAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
-					<td><pre><input type="checkbox" value="com.dynatrace.builtin:pgi.jvm.threadcount"><label>Java Thread Count</label></pre></td><td><pre><select id="com.dynatrace.builtin:pgi.jvm.threadcountAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
-				</tr>
-			</table>
-			<hr>
-		</div>
-		<div id="serviceMetricsSection" style="background-color: #6F2DA8;" class="hide">
-			<table>
-				<tr>
-					<td><h3><pre>Input Filter For Services(s) & Select Metrics</pre></h3></td>
-				</tr>
-				<tr>
-					<td><pre>Put Service Entity IDs OR Tags into Correct Text Box Below Separated with a Comma. EX : SERVICE-232B30B733CF9ECB</pre></td>
-				</tr>
-				<tr>
-					<td><pre>Use ctrl key to select multiple Aggregations. Min, Avg, Max Selected by Default.</pre></td>
-				</tr>
-				<tr>
-					<td><pre>Tag(s)		: <input type="text" id="serviceTag"></pre></td>
-				</tr>
-				<tr>
-					<td><pre>Service ID(s)	: <input type="text" id="serviceID"></pre></td>
-				</tr>
-			</table>
-			<table id="serviceMetricList">
-				<tr>
-					<td><pre><input type="checkbox" checked="true" value="com.dynatrace.builtin:service.responsetime"><label>Response Time</label></pre></td><td><pre><select id="com.dynatrace.builtin:service.responsetimeAgg" multiple="true" size="5"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option><option value="MEDIAN">Median</option></select></pre></td>
-					<td><pre><input type="checkbox" checked="true" value="com.dynatrace.builtin:service.requests"><label>Number of Requests</label></pre></td><td><pre><select id="com.dynatrace.builtin:service.requestsAgg"multiple="true" size="1"><option selected value="COUNT">Count</option></select></pre></td>
-				</tr>
-				<tr>
-					<td><pre><input type="checkbox" value="com.dynatrace.builtin:service.errorcounthttp4xx"><label>Number of HTTP 4xx</label></pre></td><td><pre></pre></td>
-					<td><pre><input type="checkbox" value="com.dynatrace.builtin:service.errorcounthttp5xx"><label>Number of HTTP 5xx</label></pre></td><td><pre></pre></td>
-				</tr>
-			</table>
-			<hr>
-		</div>	
-		<div id="timeSection" class="hide">
-			<table>
-				<tr>
-					<td><h3><pre>Input Start & End Dates and Times</pre></h3></td>
-				</tr>
-				</tr>
-					<td><button id="lastOneHour" type="submit">Last 1 Hour</button></td>
-				</tr>
-				<tr>
-					<td colspan="3"><center><pre style="background-color: red; font-weight: bold;">NOTE: If the Month and Day are disabled, try removing the Year Value to enable editing.</pre></center></td>
-				</tr>
-				<tr>
-					<td><pre>Start Month :   <input type="text" id="startMonth" placeholder=" 01"></pre></td>
-					<td><pre>   Start Day   :  <input type="text" id="startDay" placeholder=" 01"></pre></td>
-					<td><pre>   Start Year  : <input type="text" id="startYear" placeholder=" 2020"></pre></td>
-				</tr>
-				<tr>
-					<td><pre>Start Hour  :   <input type="text" id="startHour" placeholder=" 00"></pre></td>
-					<td><pre>   Start Minute:  <input type="text" id="startMinute" placeholder=" 00"></pre></td>
-					<td><pre>   Start Second: <input type="text" id="startSecond" placeholder=" 00"></pre></td>
-				</tr>
-			</table>
-			</br></br>
-			<table>
-				<tr>
-					<td><pre>End Month   :   <input type="text" id="endMonth" placeholder=" 01"></pre></td>
-					<td><pre>   End Day   :  <input type="text" id="endDay" placeholder=" 01"></pre></td>
-					<td><pre>   End Year  :  <input type="text" id="endYear" placeholder=" 2020"></pre></td>
-				</tr>
-				<tr>
-					<td><pre>End Hour    :   <input type="text" id="endHour" placeholder=" 23"></pre></td>
-					<td><pre>   End Minute:  <input type="text" id="endMinute" placeholder=" 59"></pre></td>
-					<td><pre>   End Second:  <input type="text" id="endSecond" placeholder=" 59"></pre></td>
-				</tr>
-			</table>
-			<table>
-				<tr>
-					<td><button id="validateTimeButton" type="submit">Validate Time</button></td>
-				</tr>
-			</table>
-		</div>	
-		</br></br>
-		<div id="reportSection" class="hide">
-			<table>
-				<tr>
-					<td><pre><input type="checkbox" id="buildCharts" checked="true"><label>Build Charts?</label></pre></td>
-				</tr>
-			</table>
-			<table id="chartOptions">
-				<tr>
-					<td><pre>Hosts per Chart (Between 1 and 50): <input type="text" class="valid" id="hostEntitiesPerChart" value="25"></pre></td>
-					<td><pre>Processes per Chart (Between 1 and 50): <input type="text" class="valid" id="processEntitiesPerChart" value="25"></pre></td>
-					<td><pre>Services per Chart (Between 1 and 50): <input type="text" class="valid" id="serviceEntitiesPerChart" value="25"></pre></td>
-				</tr>
-					<td><pre><input type="checkbox" id="chartsNightMode" checked="true"><label>Charts in Night Mode?</label></pre></td>
-				</tr>
-			</table>
-			<table>
-				<tr>
-					<td><button id="runReportButton" type="submit">Run Report</button></td>
-					<td id="downloadButton"></td>
-					<td id="chartButton" class="hide"><button onclick="showChart()">Show Chart</button></td>
-					<td id="tableButton" class="hide"><button onclick="showTable()">Show Table</button></td>
-				</tr>
-				<tr>
-					<td></td>
-					<td id="downloadAllButtonCell" class="hide"><button id="downloadAllButton">Download All Chart Pictures</button></td>
-					<td></td>
-				</tr>
-			</table> 
-			<div id="reportTimingInfo"></div>
-			<hr>
-			<div id="dataTable" class="hide">
-				<h3 id="hostMetricsLabel"><pre>Host Metrics</pre></h3>
-				<div id="hostMetrics"></div>
-				<h3 id="processMetricsLabel"><pre>Process Metrics</pre></h3>
-				<div id="processMetrics"></div>
-				<h3 id="serviceMetricsLabel"><pre>Service Metrics</pre></h3>
-				<div id="serviceMetrics"></div>
-			</div>
-			<div id="dataChart">
-			</div>
-		</div>
-	</body> 
+        #loadingSection.show, #mainSection.show, #hostMetricsLabel.show, #processMetricsLabel.show, #serviceMetricsLabel.show, #hostMetricsSection.show, #processMetricsSection.show, #serviceMetricsSection.show, #timeSection.show, #reportSection.show, #chartButton.show, #tableButton.show, #dataTable.show, #dataChart.show, #downloadAllButtonCell.show, #chartOptions.show {
+            display: block;
+        }
+    </style>
+    <head>
+        <title>Performance Reporting Tool - v1 Timeseries</title>
+        <!--Google CDN for jQuery -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+        <!--JS Zip to download Zip File -->
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.5/jszip.min.js"></script>
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jszip-utils/0.0.2/jszip-utils.min.js"></script>
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.8/FileSaver.min.js"></script>
+        <!--SheetsJS Libraries -->
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.15.2/shim.min.js"></script>
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.15.2/xlsx.full.min.js"></script>
+        <!--Google Charts Library-->
+        <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+
+
+        <script>
+            google.charts.load("current", {packages:['line','corechart','table']});
+            google.charts.setOnLoadCallback(showPage);
+
+            function showPage() {
+                document.getElementById("loadingSection").setAttribute("class","hide");
+                document.getElementById("mainSection").setAttribute("class","show");
+            }
+
+            function tables2Excel (fullMetricTableNames, worksheetNames) {
+                console.log("Downloading Excel ...")
+                var filename = "exportedReportData.xlsx"
+                var wb = XLSX.utils.book_new()
+
+                for(table in fullMetricTableNames){
+                    if (fullMetricTableNames[table] == "reportInfoTable") {
+                        console.log("Start Building Report Info WorkSheet...")
+                        var tableObj = document.getElementById(fullMetricTableNames[table])
+                        var ws = XLSX.utils.table_to_sheet(tableObj, {dateNF : 'MM/DD/YYYY HH:mm:ss'});
+                        XLSX.utils.book_append_sheet(wb, ws, worksheetNames[table]);
+                        console.log("Completed Building Report Info WorkSheet...")
+                    }
+                    else {
+                        switch (fullMetricTableNames[table]) {
+                            case "com.dynatrace.builtin:service.errorcounthttp4xx":
+                            case "com.dynatrace.builtin:service.errorcounthttp5xx":
+                                console.log("Start Building " + fullMetricTableNames[table] + " WorkSheet...")
+                                tableObj = document.getElementById(fullMetricTableNames[table]+"-NoAgg")
+                                var ws = XLSX.utils.table_to_sheet(tableObj, {dateNF : 'MM/DD/YYYY HH:mm:ss'});
+                                XLSX.utils.book_append_sheet(wb, ws, worksheetNames[table]);
+                                console.log("Completed Building " + fullMetricTableNames[table] + " WorkSheet...")
+                            break;
+                            default:
+                                console.log("Start Building " + fullMetricTableNames[table] + " WorkSheet...")
+                                var metricAgg = fullMetricTableNames[table] + "Agg"
+                                var aggregationSelection = document.getElementById(metricAgg);
+                                var selectedAggList = aggregationSelection.selectedOptions //get Selected Options
+                                var fullWS
+                                var fullWSCount = 0
+                                for (var aggLength=0; aggLength<selectedAggList.length; aggLength++) { // Run through selected aggregations
+                                    var aggregationSelectionVal = selectedAggList[aggLength].value;
+                                    console.log("Start Building " + fullMetricTableNames[table]+"-"+ aggregationSelectionVal + " Temp WorkSheet...")
+                                    var tmpTable = document.getElementById(fullMetricTableNames[table]+"-"+aggregationSelectionVal)
+                                    if (tmpTable.rows.length > 2){
+                                        if (aggLength == 0) {
+                                            fullWS = XLSX.utils.table_to_sheet(tmpTable, {dateNF: 'MM/DD/YYYY HH:mm:ss'})
+                                            fullWSCount = fullWSCount + 1
+                                        }
+                                        else {
+                                            var tmpWS = XLSX.utils.table_to_sheet(tmpTable, {cellDates: true, dateNF: 'MM/DD/YYYY HH:mm:ss'})
+                                            var tmpJSON = XLSX.utils.sheet_to_json(tmpWS, {cellDates: true, dateNF: 'MM/DD/YYYY HH:mm:ss', blankrows: true})
+                                            XLSX.utils.sheet_add_json(fullWS,tmpJSON, {skipHeader: false, origin: -1, cellDates: true, dateNF: 'MM/DD/YYYY HH:mm:ss', blankrows: true});
+                                        }
+                                    }
+                                    else {
+                                        console.log("Table Length means no data. Not adding table to Work Sheet.")
+                                    }
+                                }
+                                if (fullWSCount >= 1){
+                                    XLSX.utils.book_append_sheet(wb, fullWS, worksheetNames[table]);
+                                }
+                                console.log("Completed Building " + fullMetricTableNames[table] + " WorkSheet...")
+                                break;
+                        }
+                    }
+                }
+                XLSX.writeFile(wb, filename, {compression:true})
+            }
+            //draws the charts from the data gathered by the API
+            function drawChart(chartTitle,data) {
+                var nightModeBox = document.getElementById("chartsNightMode")
+
+                var backgroundColor = "#2d2d2d";
+                var textColor = "white";
+
+                if (nightModeBox.checked == false) {
+                    textColor = "#2d2d2d";
+                    backgroundColor = "white";
+                }
+
+                var options = {
+                    title : chartTitle,
+                    width: '85%',
+                    height: 600,
+                    backgroundColor: backgroundColor,
+                    aggregationTarget: 'category',
+                    focusTarget: 'datum',
+                    tooltip: {trigger: 'none'},
+                    enableInteractivity: 'false',
+                    hAxis: {textStyle: {color : textColor}},
+                    vAxis: {textStyle: {color : textColor},
+                            minValue: 0},
+                    titleTextStyle: {color : textColor},
+                    legend: { position: 'top',
+                             textStyle: {color : textColor},
+                             maxLines: 3
+                            },
+                    series: {
+                        0: { color: '#4285F4' }, // DT blue
+                        1: { color: '#6F2DA8' }, // DT Purple
+                        2: { color: '#73BE28' }, // DT Green
+                        3: { color: '#FFFFFF' }, // White
+                        4: { color: '#FF0000' }, // Red
+                        5: { color: '#FFFF00' }, // Yellow
+                        6: { color: '#FF8C00' }, // Orange
+                        7: { color: '#8B4513' } // Brown
+                    }
+                };
+                var chart = new google.visualization.LineChart(document.getElementById(chartTitle));
+                chart.draw(data,options);
+                return chart.getImageURI();
+            }
+
+            //used to show correct buttons after report is generated
+            function showTable() {
+                document.getElementById("tableButton").setAttribute("class","hide");
+                document.getElementById("chartButton").setAttribute("class","show");
+                document.getElementById("dataTable").setAttribute("class","show");
+                document.getElementById("dataChart").setAttribute("class","hide");
+                document.getElementById("downloadAllButtonCell").setAttribute("class","hide");
+            }
+
+            //used to show correct buttons after report is generated
+            function showChart() {
+                document.getElementById("tableButton").setAttribute("class","show");
+                document.getElementById("chartButton").setAttribute("class","hide");
+                document.getElementById("dataTable").setAttribute("class","hide");
+                document.getElementById("dataChart").setAttribute("class","show");
+                document.getElementById("downloadAllButtonCell").setAttribute("class","show");
+            }
+        </script>
+    </head>
+    <body>
+        <table>
+            <tr><h2><center>Dynatrace v2 Metrics API Performance Reporting Tool</center></h2></tr>
+            <tr><center><pre>Purpose : This tool captures data using the Dynatrace API, with the ability to then export the data to Excel.</pre></center></tr>
+
+            <tr><center><pre style='font-weight: bold;'>Usage : Input Dynatrace URL, API Token and select which metric types you would like to capture.</pre></center></tr>
+            <tr><center><pre style='font-weight: bold;'>Then select which Entity IDs or Tags to capture and the metrics. Enter the time and click validate time then "Run Report"</pre></center></tr>
+        </table>
+        </br>
+        <div id="loadingSection" class="show">
+            <h1><center>Loading...</center></h1>
+        </div>
+        <div id="mainSection" class="hide">
+            <table><tr><td><pre>Input your Dynatrace Environment URL:
+            Managed:    https://{your-domain}/e/{your-environment-id}
+            SaaS:       https://{your-environment-id}.live.dynatrace.com</pre></td></tr>
+            </table>
+            <br>
+            <table>
+                <tr>
+                    <td><pre>Dynatrace Environment URL: <input type="text" id="dynatraceURL" size='89'></pre></td>
+                </tr>
+                <tr>
+                    <td><pre>API Token                : <input type="text" id="dynatraceToken" size='89'></pre></td>
+                </tr>
+            </table>
+            <table>
+                <tr>
+                    <td><pre><input type="checkbox" id="showHostMetricsSection"><label>Collect Data for Hosts </label></pre></td>
+                </tr>
+                <tr>
+                    <td><pre><input type="checkbox" id="showProcessMetricsSection"><label>Collect Data for Processes    </label></pre></td>
+                </tr>
+                <tr>
+                    <td><pre><input type="checkbox" id="showServiceMetricsSection"><label>Collect Data for Services    </label></pre></td>
+                </tr>
+            </table>
+        </div>
+        <hr>
+        <div id="hostMetricsSection" class="hide" style='background-color:#1396FE;'>
+            <table>
+                <tr>
+                    <td><h3><pre>Input Filter For Host(s) & Select Metrics</pre></h3></td>
+                </tr>
+                <tr>
+                    <td><pre>Put Host Entity IDs OR Tags into Correct Text Box Below Separated with a Comma. EX : HOST-B7A6F9EE9F366CB5</pre></td>
+                </tr>
+                <tr>
+                    <td><pre>Use ctrl key to select multiple Aggregations. Min, Avg, Max Selected by Default.</pre></td>
+                </tr>
+                <tr>
+                    <td><pre>Tag(s)        : <input type="text" id="hostTag"></pre></td>
+                </tr>
+                <tr>
+                    <td><pre>Host ID(s)    : <input type="text" id="hostID"></pre></td>
+                </tr>
+            <table id="hostMetricList">
+                <tr>
+                    <td><pre><input type="checkbox" checked="true" value="com.dynatrace.builtin:host.mem.availablepercentage"><label>Host Memory Available %</label></pre></td><td><pre><select id="com.dynatrace.builtin:host.mem.availablepercentageAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
+                </tr>
+                <tr>
+                    <td><pre><input type="checkbox" value="com.dynatrace.builtin:host.nic.bytesreceived"><label>Host Bytes Received / Sec</label></pre></td><td><pre><select id="com.dynatrace.builtin:host.nic.bytesreceivedAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
+                    <td><pre><input type="checkbox" value="com.dynatrace.builtin:host.nic.bytessent"><label>Host Bytes Sent / Sec</label></pre></td><td><pre><select id="com.dynatrace.builtin:host.nic.bytessentAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
+                </tr>
+                <tr>
+                    <td><pre><input type="checkbox" checked="true" value="com.dynatrace.builtin:host.cpu.system"><label>Host CPU System %</label></pre></td><td><pre><select id="com.dynatrace.builtin:host.cpu.systemAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
+                    <td><pre><input type="checkbox" value="com.dynatrace.builtin:host.cpu.idle"><label>Host CPU Idle %</label></pre></td><td><pre><select id="com.dynatrace.builtin:host.cpu.idleAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
+                    <td><pre><input type="checkbox" value="com.dynatrace.builtin:host.cpu.iowait"><label>Host CPU I/O Wait %</label></pre></td><td><pre><select id="com.dynatrace.builtin:host.cpu.iowaitAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
+                    <td><pre><input type="checkbox" value="com.dynatrace.builtin:host.cpu.other"><label>Host CPU Other %</label></pre></td><td><pre><select id="com.dynatrace.builtin:host.cpu.otherAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
+                    <td><pre><input type="checkbox" value="com.dynatrace.builtin:host.cpu.steal"><label>Host CPU Steal %</label></pre></td><td><pre><select id="com.dynatrace.builtin:host.cpu.stealAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
+                </tr>
+            </table>
+            <hr>
+        </div>
+        <div id="processMetricsSection" class="hide">
+            <table>
+                <tr>
+                    <td><h3><pre>Input Filter For Process(es) & Select Metrics</pre></h3></td>
+                </tr>
+                <tr>
+                    <td><pre>Put Process Group Instance Entity IDs OR Tags in correct Text Box Below Separated with a Comma. EX : PROCESS_GROUP_INSTANCE-903A173E06288070</pre></td>
+                </tr>
+                <tr>
+                    <td><pre>Use ctrl key to select multiple Aggregations. Min, Avg, Max Selected by Default.</pre></td>
+                </tr>
+                <tr>
+                    <td><pre>Tag(s)                : <input type="text" id="processTag"></pre></td>
+                </tr>
+                <tr>
+                    <td><pre>Process Group Instance ID(s)    : <input type="text" id="processID"></pre></td>
+                </tr>
+            </table>
+            <table id="processMetricList">
+                <tr>
+                    <td><pre><input type="checkbox" checked="true" value="com.dynatrace.builtin:pgi.cpu.usage"><label>Process CPU %</label></pre></td><td><pre><select id="com.dynatrace.builtin:pgi.cpu.usageAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
+                    <td><pre><input type="checkbox" checked="true" value="com.dynatrace.builtin:pgi.mem.usage"><label>Process Memory %</label></pre></td><td><pre><select id="com.dynatrace.builtin:pgi.mem.usageAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
+                    <td><pre><input type="checkbox" value="com.dynatrace.builtin:pgi.suspension"><label>GC Suspension Time</label></pre></td><td><pre><select id="com.dynatrace.builtin:pgi.suspensionAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
+                </tr>
+                <tr>
+                    <td><pre><input type="checkbox" value="com.dynatrace.builtin:pgi.jvm.garbagecollectioncount"><label>Java GC Count</label></pre></td><td><pre><select id="com.dynatrace.builtin:pgi.jvm.garbagecollectioncountAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
+                    <td><pre><input type="checkbox" value="com.dynatrace.builtin:pgi.jvm.garbagecollectiontime"><label>Java GC Time</label></pre></td><td><pre><select id="com.dynatrace.builtin:pgi.jvm.garbagecollectiontimeAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
+                    <td><pre><input type="checkbox" value="com.dynatrace.builtin:pgi.jvm.threadcount"><label>Java Thread Count</label></pre></td><td><pre><select id="com.dynatrace.builtin:pgi.jvm.threadcountAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
+                </tr>
+            </table>
+            <hr>
+        </div>
+        <div id="serviceMetricsSection" style="background-color: #6F2DA8;" class="hide">
+            <table>
+                <tr>
+                    <td><h3><pre>Input Filter For Services(s) & Select Metrics</pre></h3></td>
+                </tr>
+                <tr>
+                    <td><pre>Put Service Entity IDs OR Tags into Correct Text Box Below Separated with a Comma. EX : SERVICE-232B30B733CF9ECB</pre></td>
+                </tr>
+                <tr>
+                    <td><pre>Use ctrl key to select multiple Aggregations. Min, Avg, Max Selected by Default.</pre></td>
+                </tr>
+                <tr>
+                    <td><pre>Tag(s)        : <input type="text" id="serviceTag"></pre></td>
+                </tr>
+                <tr>
+                    <td><pre>Service ID(s)    : <input type="text" id="serviceID"></pre></td>
+                </tr>
+            </table>
+            <table id="serviceMetricList">
+                <tr>
+                    <td><pre><input type="checkbox" checked="true" value="com.dynatrace.builtin:service.responsetime"><label>Response Time</label></pre></td><td><pre><select id="com.dynatrace.builtin:service.responsetimeAgg" multiple="true" size="5"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option><option value="MEDIAN">Median</option></select></pre></td>
+                    <td><pre><input type="checkbox" checked="true" value="com.dynatrace.builtin:service.requests"><label>Number of Requests</label></pre></td><td><pre><select id="com.dynatrace.builtin:service.requestsAgg"multiple="true" size="1"><option selected value="COUNT">Count</option></select></pre></td>
+                </tr>
+                <tr>
+                    <td><pre><input type="checkbox" value="com.dynatrace.builtin:service.errorcounthttp4xx"><label>Number of HTTP 4xx</label></pre></td><td><pre></pre></td>
+                    <td><pre><input type="checkbox" value="com.dynatrace.builtin:service.errorcounthttp5xx"><label>Number of HTTP 5xx</label></pre></td><td><pre></pre></td>
+                </tr>
+            </table>
+            <hr>
+        </div>
+        <div id="timeSection" class="hide">
+            <table>
+                <tr>
+                    <td><h3><pre>Input Start & End Dates and Times</pre></h3></td>
+                </tr>
+                </tr>
+                    <td><button id="lastOneHour" type="submit">Last 1 Hour</button></td>
+                </tr>
+                <tr>
+                    <td colspan="3"><center><pre style="background-color: red; font-weight: bold;">NOTE: If the Month and Day are disabled, try removing the Year Value to enable editing.</pre></center></td>
+                </tr>
+                <tr>
+                    <td><pre>Start Month :   <input type="text" id="startMonth" placeholder=" 01"></pre></td>
+                    <td><pre>   Start Day   :  <input type="text" id="startDay" placeholder=" 01"></pre></td>
+                    <td><pre>   Start Year  : <input type="text" id="startYear" placeholder=" 2020"></pre></td>
+                </tr>
+                <tr>
+                    <td><pre>Start Hour  :   <input type="text" id="startHour" placeholder=" 00"></pre></td>
+                    <td><pre>   Start Minute:  <input type="text" id="startMinute" placeholder=" 00"></pre></td>
+                    <td><pre>   Start Second: <input type="text" id="startSecond" placeholder=" 00"></pre></td>
+                </tr>
+            </table>
+            </br></br>
+            <table>
+                <tr>
+                    <td><pre>End Month   :   <input type="text" id="endMonth" placeholder=" 01"></pre></td>
+                    <td><pre>   End Day   :  <input type="text" id="endDay" placeholder=" 01"></pre></td>
+                    <td><pre>   End Year  :  <input type="text" id="endYear" placeholder=" 2020"></pre></td>
+                </tr>
+                <tr>
+                    <td><pre>End Hour    :   <input type="text" id="endHour" placeholder=" 23"></pre></td>
+                    <td><pre>   End Minute:  <input type="text" id="endMinute" placeholder=" 59"></pre></td>
+                    <td><pre>   End Second:  <input type="text" id="endSecond" placeholder=" 59"></pre></td>
+                </tr>
+            </table>
+            <table>
+                <tr>
+                    <td><button id="validateTimeButton" type="submit">Validate Time</button></td>
+                </tr>
+            </table>
+        </div>
+        </br></br>
+        <div id="reportSection" class="hide">
+            <table>
+                <tr>
+                    <td><pre><input type="checkbox" id="buildCharts" checked="true"><label>Build Charts?</label></pre></td>
+                </tr>
+            </table>
+            <table id="chartOptions">
+                <tr>
+                    <td><pre>Hosts per Chart (Between 1 and 50): <input type="text" class="valid" id="hostEntitiesPerChart" value="25"></pre></td>
+                    <td><pre>Processes per Chart (Between 1 and 50): <input type="text" class="valid" id="processEntitiesPerChart" value="25"></pre></td>
+                    <td><pre>Services per Chart (Between 1 and 50): <input type="text" class="valid" id="serviceEntitiesPerChart" value="25"></pre></td>
+                </tr>
+                    <td><pre><input type="checkbox" id="chartsNightMode" checked="true"><label>Charts in Night Mode?</label></pre></td>
+                </tr>
+            </table>
+            <table>
+                <tr>
+                    <td><button id="runReportButton" type="submit">Run Report</button></td>
+                    <td id="downloadButton"></td>
+                    <td id="chartButton" class="hide"><button onclick="showChart()">Show Chart</button></td>
+                    <td id="tableButton" class="hide"><button onclick="showTable()">Show Table</button></td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td id="downloadAllButtonCell" class="hide"><button id="downloadAllButton">Download All Chart Pictures</button></td>
+                    <td></td>
+                </tr>
+            </table>
+            <div id="reportTimingInfo"></div>
+            <hr>
+            <div id="dataTable" class="hide">
+                <h3 id="hostMetricsLabel"><pre>Host Metrics</pre></h3>
+                <div id="hostMetrics"></div>
+                <h3 id="processMetricsLabel"><pre>Process Metrics</pre></h3>
+                <div id="processMetrics"></div>
+                <h3 id="serviceMetricsLabel"><pre>Service Metrics</pre></h3>
+                <div id="serviceMetrics"></div>
+            </div>
+            <div id="dataChart">
+            </div>
+        </div>
+    </body>
 </html>
 
 <script>
-	$(document).ready(function(){
-		
-		var collectHostMetrics = false
-		var collectProcessMetrics = false 
-		var collectServiceMetrics = false
-		
-		var validStartMonth = false
-		var validStartDay = false
-		var validStartYear = false
-		var validStartHour = false
-		var validStartMinute = false
-		var validStartSecond = false
+    $(document).ready(function(){
 
-		var validEndMonth = false
-		var validEndDay = false
-		var validEndYear = false
-		var validEndHour = false
-		var validEndMinute = false
-		var validEndSecond = false
-		validEntitiesPerChart = true
+        var collectHostMetrics = false
+        var collectProcessMetrics = false
+        var collectServiceMetrics = false
 
-		var validTime = false
-		var allEntityIDNameArr = [] //used to capture all Entity ID & Names to create URLs for Report Info Section
+        var validStartMonth = false
+        var validStartDay = false
+        var validStartYear = false
+        var validStartHour = false
+        var validStartMinute = false
+        var validStartSecond = false
 
-		$('#buildCharts').on('click', function() {
-			var inputBuildCharts=$(this);
-			var chartOptionsTable = document.getElementById("chartOptions");
-			
-			if (inputBuildCharts.prop("checked")== true){
-				chartOptionsTable.setAttribute("class","show");
-			}
-			else 
-			{
-			  chartOptionsTable.setAttribute("class","hide");
-			}
-		});
-		
+        var validEndMonth = false
+        var validEndDay = false
+        var validEndYear = false
+        var validEndHour = false
+        var validEndMinute = false
+        var validEndSecond = false
+        validEntitiesPerChart = true
 
-		//start entity id or entity tag input validation 
-		// Either Entity ID or Tag value is allowed, not both 
-		$('#hostTag').on('input', function() {
-			var inputHostTag=$(this);
-			var inputHostID = document.getElementById("hostID");
-			if (inputHostTag.val() != "") {
-				inputHostID.value = ""
-				inputHostID.setAttribute("disabled","true");
-			}
-			else {
-				inputHostID.removeAttribute("disabled");
-			}
-		});
-		
-		$('#hostID').on('input', function() {
-			var inputHostID=$(this);
-			var inputHostTag = document.getElementById("hostTag");
-			if (inputHostID.val() != "") {
-				inputHostTag.value = ""
-				inputHostTag.setAttribute("disabled","true");
-			}
-			else {
-				inputHostTag.removeAttribute("disabled");
-			}
-		});
-		
-		$('#processTag').ready(function(){
-			var inputProcessTag=$(this);
-			var inputProcessID = document.getElementById("processID");
-			if (inputProcessTag.val() != "") {
-				inputProcessID.value = ""
-				inputProcessID.setAttribute("disabled","true");
-			}
-			else {
-				inputProcessID.removeAttribute("disabled");
-			}
-		});
-		
-		$('#processID').on('input', function() {
-			var inputProcessID=$(this);
-			var inputProcessTag = document.getElementById("processTag");
-			if (inputProcessID.val() != "") {
-				inputProcessTag.value = ""
-				inputProcessTag.setAttribute("disabled","true");
-			}
-			else {
-				inputProcessTag.removeAttribute("disabled");
-			}
-		});
-		
-		$('#serviceTag').on('input', function() {
-			var inputServiceTag=$(this);
-			var inputServiceID = document.getElementById("serviceID");
-			if (inputServiceTag.val() != "") {
-				inputServiceID.value = ""
-				inputServiceID.setAttribute("disabled","true");
-			}
-			else {
-				inputServiceID.removeAttribute("disabled");
-			}
-		});
-		
-		$('#serviceID').on('input', function() {
-			var inputServiceID=$(this);
-			var inputServiceTag = document.getElementById("serviceTag");
-			if (inputServiceID.val() != "") {
-				inputServiceTag.value = ""
-				inputServiceTag.setAttribute("disabled","true");
-			}
-			else {
-				inputServiceTag.removeAttribute("disabled");
-			}
-		});
-		//End entity id or entity tag input validation
+        var validTime = false
+        var allEntityIDNameArr = [] //used to capture all Entity ID & Names to create URLs for Report Info Section
 
-		//Start Show Metric Type Section 
-		$('#showHostMetricsSection').on('input', function() {
-			var hostSection = document.getElementById("hostMetricsSection");
-			var timeSection = document.getElementById("timeSection");
-			var reportSection = document.getElementById("reportSection");
-			var hostMetricsLabel = document.getElementById("hostMetricsLabel");
-			var processMetricsLabel = document.getElementById("processMetricsLabel");
-			var serviceMetricsLabel = document.getElementById("serviceMetricsLabel");
-			
-			if($(this).is(":checked") == true){
-				hostSection.setAttribute("class","show");
-				timeSection.setAttribute("class","show");
-				reportSection.setAttribute("class","show");
-				hostMetricsLabel.setAttribute("class","hide");
-				processMetricsLabel.setAttribute("class","hide");
-				serviceMetricsLabel.setAttribute("class","hide");
-				collectHostMetrics = true
-			}
-			else {
-				collectHostMetrics = false
-				hostSection.setAttribute("class","hide");
-				if (collectHostMetrics == false && collectProcessMetrics == false && collectServiceMetrics == false){
-					timeSection.setAttribute("class","hide");
-					reportSection.setAttribute("class","hide");
-				}
-				
-			}
-		
-		});
-		
-		$('#showProcessMetricsSection').on('input', function() {
-			var processSection = document.getElementById("processMetricsSection");
-			var timeSection = document.getElementById("timeSection");
-			var reportSection = document.getElementById("reportSection");
-			var hostMetricsLabel = document.getElementById("hostMetricsLabel");
-			var processMetricsLabel = document.getElementById("processMetricsLabel");
-			var serviceMetricsLabel = document.getElementById("serviceMetricsLabel");
-			
-			if($(this).is(":checked") == true){
-				processSection.setAttribute("class","show");
-				timeSection.setAttribute("class","show");
-				reportSection.setAttribute("class","show");
-				hostMetricsLabel.setAttribute("class","hide");
-				processMetricsLabel.setAttribute("class","hide");
-				serviceMetricsLabel.setAttribute("class","hide");
-				collectProcessMetrics = true
-			}
-			else {
-				collectProcessMetrics = false
-				processSection.setAttribute("class","hide");
-				if (collectHostMetrics == false && collectProcessMetrics == false && collectServiceMetrics == false){
-					timeSection.setAttribute("class","hide");
-					reportSection.setAttribute("class","hide");
-				}
-			}
-		
-		});
-		
-		$('#showServiceMetricsSection').on('input', function() {
-			var serviceSection = document.getElementById("serviceMetricsSection");
-			var timeSection = document.getElementById("timeSection");
-			var reportSection = document.getElementById("reportSection");
-			var hostMetricsLabel = document.getElementById("hostMetricsLabel");
-			var processMetricsLabel = document.getElementById("processMetricsLabel");
-			var serviceMetricsLabel = document.getElementById("serviceMetricsLabel");
-			
-			if($(this).is(":checked") == true){
-				serviceSection.setAttribute("class","show");
-				timeSection.setAttribute("class","show");
-				reportSection.setAttribute("class","show");
-				hostMetricsLabel.setAttribute("class","hide");
-				processMetricsLabel.setAttribute("class","hide");
-				serviceMetricsLabel.setAttribute("class","hide");
-				collectServiceMetrics = true
-			}
-			else {
-				collectServiceMetrics = false
-				serviceSection.setAttribute("class","hide");
-				if (collectHostMetrics == false && collectProcessMetrics == false && collectServiceMetrics == false){
-					timeSection.setAttribute("class","hide");
-					reportSection.setAttribute("class","hide");
-				}				
-			}
-		
-		});		
-		// End Show Metric Type Section 
-				
-		//Start Date Time Validations 
-		//Start Start Date Time Validations 
-		$('#startMonth').on("input click", function() {
-		var input=$(this);
-		var monthNumber=input.val();
-		if(monthNumber && $.isNumeric(monthNumber) && monthNumber >= 1 && monthNumber <=12)
-			{input.removeClass("invalid").addClass("valid");
-			 validStartMonth = true
-			}
-		else
-			{input.removeClass("valid").addClass("invalid");
-			 validStartMonth = false
-			}
-		});
-		
-		$('#startDay').on("input click", function() {
-		var input=$(this);
-		var dayNumber=input.val();
-		if(dayNumber && $.isNumeric(dayNumber) && dayNumber >= 1 && dayNumber <=31)
-			{
-			 input.removeClass("invalid").addClass("valid");
-			 validStartDay = true
-			}
-		else
-			{input.removeClass("valid").addClass("invalid");
-			 validStartDay = false
-			}
-		});
-		
-		$('#startYear').on("input click", function() {
-		var input=$(this);
-		var inputDay=$('#startDay');
-		var inputMonth=$('#startMonth');
-		
-		var yearNumber=input.val();
-		var dayNumber=inputDay.val();
-		var monthNumber=inputMonth.val();
-		
-		if (input.val() != ""){
-			inputDay.prop('disabled',true);
-			inputMonth.prop('disabled',true);
-		
-			if(yearNumber && $.isNumeric(yearNumber) && yearNumber >= 2015 && yearNumber <=2030 && checkDate(dayNumber,monthNumber,yearNumber))
-				{input.removeClass("invalid").addClass("valid");
-				validStartYear = true
-				}
-			else
-				{input.removeClass("valid").addClass("invalid");
-				validStartYear = false
-				}
-		}
-		else {
-			inputDay.prop('disabled',false);
-			inputMonth.prop('disabled',false);
-			input.removeClass("valid").addClass("invalid");		
-		}
-		});
-		
-		$('#startHour').on("input click", function() {
-		var input=$(this);
-		var hourNumber=input.val();
-		if(hourNumber && $.isNumeric(hourNumber) && hourNumber >= 0 && hourNumber <=23)
-			{input.removeClass("invalid").addClass("valid");
-			 validStartHour = true
-			}
-		else
-			{input.removeClass("valid").addClass("invalid");
-			 validStartHour = false
-			}
-		});
-		
-		$('#startMinute').on("input click", function() {
-		var input=$(this);
-		var minuteNumber=input.val();
-		if(minuteNumber && $.isNumeric(minuteNumber) && minuteNumber >= 0 && minuteNumber <=59)
-			{input.removeClass("invalid").addClass("valid");
-			 validStartMinute = true
-			}
-		else
-			{input.removeClass("valid").addClass("invalid");
-			 validStartMinute = false
-			}
-		});
-		
-		$('#startSecond').on("input click", function() {
-		var input=$(this);
-		var secondNumber=input.val();
-		if(secondNumber && $.isNumeric(secondNumber) && secondNumber >= 0 && secondNumber <=59)
-			{input.removeClass("invalid").addClass("valid");
-			 validStartSecond = true
-			}
-		else
-			{input.removeClass("valid").addClass("invalid");
-			 validStartSecond = false
-			}
-		});
-		// End Start Date Time Validations 
-		
-		//End Date Time Validations 
-		$('#endMonth').on("input click", function() {
-		var input=$(this);
-		var monthNumber=input.val();
-		if(monthNumber && $.isNumeric(monthNumber) && monthNumber >= 1 && monthNumber <=12)
-			{input.removeClass("invalid").addClass("valid");
-			 validEndMonth = true
-			}
-		else
-			{input.removeClass("valid").addClass("invalid");
-			 validEndMonth = false
-			}
-		});
-		
-		$('#endDay').on("input click", function() {
-		var input=$(this);
-		var dayNumber=input.val();
-		if(dayNumber && $.isNumeric(dayNumber) && dayNumber >= 1 && dayNumber <=31)
-			{input.removeClass("invalid").addClass("valid");
-			 validEndDay = true
-			}
-		else
-			{input.removeClass("valid").addClass("invalid");
-			 validEndDay = false
-			}
-		});
-		
-		$('#endYear').on("input click", function() {
-		var input=$(this);
-		var inputDay=$('#endDay');
-		var inputMonth=$('#endMonth');
-		
-		var yearNumber=input.val();
-		var dayNumber=inputDay.val();
-		var monthNumber=inputMonth.val();
-		
-		if (input.val() != ""){
-			inputDay.prop('disabled',true);
-			inputMonth.prop('disabled',true);
-		
-			if(yearNumber && $.isNumeric(yearNumber) && yearNumber >= 2015 && yearNumber <=2030 && checkDate(dayNumber,monthNumber,yearNumber))
-				{input.removeClass("invalid").addClass("valid");
-				validEndYear = true
-				}
-			else
-				{input.removeClass("valid").addClass("invalid");
-				validEndYear = false
-				}
-		}
-		else {
-			inputDay.prop('disabled',false);
-			inputMonth.prop('disabled',false);
-			input.removeClass("valid").addClass("invalid");
-		}
-		});
-		
-		$('#endHour').on("input click", function() {
-		var input=$(this);
-		var hourNumber=input.val();
-		if(hourNumber && $.isNumeric(hourNumber) && hourNumber >= 0 && hourNumber <=23)
-			{input.removeClass("invalid").addClass("valid");
-			 validEndHour = true
-			}
-		else
-			{input.removeClass("valid").addClass("invalid");
-			 validEndHour = false
-			}
-		});
-		
-		$('#endMinute').on("input click", function() {
-		var input=$(this);
-		var minuteNumber=input.val();
-		if(minuteNumber && $.isNumeric(minuteNumber) && minuteNumber >= 0 && minuteNumber <=59)
-			{input.removeClass("invalid").addClass("valid");
-			 validEndMinute = true
-			}
-		else
-			{input.removeClass("valid").addClass("invalid");
-			 validEndMinute = false
-			}
-		});
-				
-		$('#endSecond').on("input click", function() {
-		var input=$(this);
-		var secondNumber=input.val();
-		if(secondNumber && $.isNumeric(secondNumber) && secondNumber >= 0 && secondNumber <=59)
-			{input.removeClass("invalid").addClass("valid");
-			 validEndSecond = true
-			}
-		else
-			{input.removeClass("valid").addClass("invalid");
-			 validEndSecond = false
-			}
-		});	
-		// End End Date Time Validations 
-		// End Time Validation Methods 
+        $('#buildCharts').on('click', function() {
+            var inputBuildCharts=$(this);
+            var chartOptionsTable = document.getElementById("chartOptions");
 
-		//Automatic Start & End Time additions 
-		$('#lastOneHour').on("click", function() {
-			//Start Date/Time Auto Fill 
-			var now = new Date();
-			$('#startMonth').val(now.getMonth()+1).click();
-			$('#startDay').val(now.getDate()).click();
-			$('#startYear').val(now.getFullYear()).click();
-			if (now.getHours()-1 > 0) {
-				$('#startHour').val(now.getHours()-1).click();
-				$('#startMinute').val(now.getMinutes()).click();
-			}
-			else {
-				$('#startHour').val("00").click();
-				$('#startMinute').val("00").click();
-			}
-			$('#startSecond').val("00").click();
-			
-			//End Date/Time Auto Fill 
-			$('#endMonth').val(now.getMonth()+1).click();
-			$('#endDay').val(now.getDate()).click();
-			$('#endYear').val(now.getFullYear()).click();
-			$('#endHour').val(now.getHours()).click();
-			$('#endMinute').val(now.getMinutes()).click();
-			$('#endSecond').val("00").click();
-			//End Auto Date/Time Fill Section
-		});	
-	
-		//validation for Entities per chart text box 
-		$('#hostEntitiesPerChart').on('input', function() {
-		var input=$(this);
-		var entitiesPerChartNumber=input.val();
-		if(entitiesPerChartNumber && $.isNumeric(entitiesPerChartNumber) && entitiesPerChartNumber > 0 && entitiesPerChartNumber <=50)
-			{input.removeClass("invalid").addClass("valid");
-			 validEntitiesPerChart = true
-			}
-		else
-			{input.removeClass("valid").addClass("invalid");
-			 validEntitiesPerChart = false
-			}
-		});
-		
-		$('#processEntitiesPerChart').on('input', function() {
-		var input=$(this);
-		var entitiesPerChartNumber=input.val();
-		if(entitiesPerChartNumber && $.isNumeric(entitiesPerChartNumber) && entitiesPerChartNumber > 0 && entitiesPerChartNumber <=50)
-			{input.removeClass("invalid").addClass("valid");
-			 validEntitiesPerChart = true
-			}
-		else
-			{input.removeClass("valid").addClass("invalid");
-			 validEntitiesPerChart = false
-			}
-		});
-		
-		$('#serviceEntitiesPerChart').on('input', function() {
-		var input=$(this);
-		var entitiesPerChartNumber=input.val();
-		if(entitiesPerChartNumber && $.isNumeric(entitiesPerChartNumber) && entitiesPerChartNumber > 0 && entitiesPerChartNumber <=50)
-			{input.removeClass("invalid").addClass("valid");
-			 validEntitiesPerChart = true
-			}
-		else
-			{input.removeClass("valid").addClass("invalid");
-			 validEntitiesPerChart = false
-			}
-		});
-	
-		// Start Validate Time Button Method 
-		$('#validateTimeButton').click(function() {
-			if (validStartMonth == true && validStartDay == true && validStartYear == true
-				&& validStartHour == true && validStartMinute == true && validStartSecond == true
-				&& validEndMonth == true && validEndDay == true && validEndYear == true
-				&& validEndHour == true	&& validEndMinute == true && validEndSecond == true) {
-				alert('No Errors Found : Please proceed')
-				validTime = true
-				console.log("Time Validated Successfully") 
-				
-			}
-			else { 
-				alert('Errors Found : Please Fix Date & Time. You May need to refresh the page.')
-				validTime = false
-			}
-		});	
-		
-		function checkDate(Day,Month,Year) {
-			if (Month == 2 && Year % 4 == 0 && Day > 29) {
-				return false; 
-			}
-			else if (Month == 2 && Year %4 != 0 && Day > 28) {
-				return false; 
-			}
-			else if (Month % 2 == 0 && Day > 30) {
-				return false; 
-			}
-			else 
-				return true;
-		}
-		// End Validate Time Button Methods 
-	
-		// Click on Run Report Button to kick everything off 
-		$('#runReportButton').click(function() {
-			if (validTime == true && (collectHostMetrics == true || collectProcessMetrics == true || collectServiceMetrics == true)) {
-				console.log("Starting Report Run ...")
-								
-				var dvHostTable = document.getElementById("hostMetrics");
-				var dvProcessTable = document.getElementById("processMetrics");
-				var dvServiceTable = document.getElementById("serviceMetrics");
-				var dvReportSection = document.getElementById("dataChart");
+            if (inputBuildCharts.prop("checked")== true){
+                chartOptionsTable.setAttribute("class","show");
+            }
+            else
+            {
+              chartOptionsTable.setAttribute("class","hide");
+            }
+        });
 
-				var hostMetricsLabel = document.getElementById("hostMetricsLabel");	
-				var processMetricsLabel = document.getElementById("processMetricsLabel");
-				var serviceMetricsLabel = document.getElementById("serviceMetricsLabel");
-				
-				dvHostTable.innerHTML = ""
-				dvProcessTable.innerHTML = ""
-				dvServiceTable.innerHTML = ""
-				dvReportSection.innerHTML = ""
 
-				hostMetricsLabel.setAttribute("class","hide");
-				processMetricsLabel.setAttribute("class","hide");
-				serviceMetricsLabel.setAttribute("class","hide");
-				
-				var inputURLValue=$('#dynatraceURL').val();
-				var inputTokenValue=$('#dynatraceToken').val();
-				var inputHostIDValue=$('#hostID').val();
-				var inputHostTagValue=$('#hostTag').val();
-				var inputProcessIDValue=$('#processID').val();
-				var inputProcessTagValue=$('#processTag').val();
-				var inputServiceIDValue=$('#serviceID').val();
-				var inputServiceTagValue=$('#serviceTag').val();
-			
-				var startTimeUTC = calculateStartTime();
-				var endTimeUTC = calculateEndTime();
-				var timeDelta = endTimeUTC - startTimeUTC
-							
-				var dateTimeStartUTC = new Date(startTimeUTC);
-				var localDateTimeStart = dateTimeStartUTC.toLocaleString();
-				
-				var dateTimeEndUTC = new Date(endTimeUTC);
-				var localDateTimeEnd = dateTimeEndUTC.toLocaleString();
-		
-				var hostMetricsList = []
-				var processMetricsList = []
-				var serviceMetricsList = []
-		
-				console.log("Start Time : " + localDateTimeStart + " : " + startTimeUTC)
-				console.log("End Time   : " + localDateTimeEnd + " : " + endTimeUTC)
-						
-				//check if timeframe is smaller than 6 months and not backwards
-				if (timeDelta > 0 && timeDelta <= 14342400000) {
-					
-					if (collectHostMetrics == true) {
-						hostMetricsList = findMetrics("host");
-						//hostMetricsLabel.setAttribute("class","show");
-						collectDataAndBuildCharts("host",inputURLValue,inputTokenValue,inputHostIDValue,inputHostTagValue,startTimeUTC,endTimeUTC,hostMetricsList)
-					}
-					
-					if (collectProcessMetrics == true) {
-						processMetricsList = findMetrics("process");
-						//processMetricsLabel.setAttribute("class","show");
-						collectDataAndBuildCharts("process",inputURLValue,inputTokenValue,inputProcessIDValue,inputProcessTagValue,startTimeUTC,endTimeUTC,processMetricsList)
-					}
- 
-					if (collectServiceMetrics == true) {
-						serviceMetricsList = findMetrics("service");
-						//serviceMetricsLabel.setAttribute("class","show");
-						collectDataAndBuildCharts("service",inputURLValue,inputTokenValue,inputServiceIDValue,inputServiceTagValue,startTimeUTC,endTimeUTC,serviceMetricsList)
-					}
+        //start entity id or entity tag input validation
+        // Either Entity ID or Tag value is allowed, not both
+        $('#hostTag').on('input', function() {
+            var inputHostTag=$(this);
+            var inputHostID = document.getElementById("hostID");
+            if (inputHostTag.val() != "") {
+                inputHostID.value = ""
+                inputHostID.setAttribute("disabled","true");
+            }
+            else {
+                inputHostID.removeAttribute("disabled");
+            }
+        });
 
-					createReportInfo(inputURLValue,localDateTimeStart,startTimeUTC,localDateTimeEnd,endTimeUTC)
-					createExcelButton(collectHostMetrics,hostMetricsList,collectProcessMetrics,processMetricsList,collectServiceMetrics,serviceMetricsList)
-					
-					if(document.getElementById("buildCharts").checked == false)
-					{
-						console.log("No Charts Built, Showing HTML Table...");
-						document.getElementById("dataTable").setAttribute("class","show");
-						document.getElementById("chartButton").setAttribute("class","hide");
-					}
-					else
-					{
-						document.getElementById("tableButton").setAttribute("class","show");
-						document.getElementById("downloadAllButtonCell").setAttribute("class","show");
-					}
-					console.log("Report Completed...")
-				}
-				else {
-					alert("Time Frame Not Right, Try Again by Refreshing the Page")
-					console.log("Time Frame is either larger than ~5.5 Months or End Time is Before Start Time")
-				}
-			}
-			else {
-				alert('Input Time not Valid or No Metrics Selected, Try Again') 
-			}
-		});
-		
-		$('#downloadAllButton').click(function () {
-				console.log("Downloading all chart images...")
-				var allImageLinks = $('.chartDownloadLink');
-				var zip = new JSZip();
-				var count = 0;
-				var zipFileName = "ChartImages.zip";
-								
-				console.log
-				
-				allImageLinks.each(function () {					
-					var chartName = $(this).attr('download');
-					var url = $(this).attr('href');
-					
-					
-					// remove special characters to make filename safe
-					var fileName = chartName.replace(/:/g,"-");
-					fileName = fileName.replace(/\\/g,"");
-					fileName = fileName.replace(/\//g,"");
-					fileName = fileName.replace(/\*/g,"");
-					fileName = fileName.replace(/\?/g,"");
-					fileName = fileName.replace(/\"/g,"");
-					fileName = fileName.replace(/\</g,"");
-					fileName = fileName.replace(/\>/g,"");
-					fileName = fileName.replace(/\|/g,"");
-					//remove first part of data URL so that the data is extracted
-					data = url.replace(/^data:application\/octet-stream;base64,/, "");
-										
-					zip.file(fileName, data, { base64: true });
-					count++;
-					if (count == allImageLinks.length) {
-						zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: {level:9}}).then(function (content) {
-							saveAs(content, zipFileName);
-						});
-					}
-				});
-		});
-		
-		//Calculate Start & End Times from input 
-		function calculateStartTime() {
-			var inputDay=$('#startDay').val();
-			var inputMonth=$('#startMonth').val();
-			var inputYear=$('#startYear').val();
-			var inputHour=$('#startHour').val();
-			var inputMinute=$('#startMinute').val();
-			var inputSecond=$('#startSecond').val();
-			
-			var correctedMonth = inputMonth - 1
-			
-			localDateTime = new Date(inputYear,correctedMonth,inputDay,inputHour,inputMinute,inputSecond);
-			localTimeStamp = localDateTime.getTime();
-			
-			return localTimeStamp;
-		}
-		
-		function calculateEndTime() {
-			var inputDay=$('#endDay').val();
-			var inputMonth=$('#endMonth').val();
-			var inputYear=$('#endYear').val();
-			var inputHour=$('#endHour').val();
-			var inputMinute=$('#endMinute').val();
-			var inputSecond=$('#endSecond').val();
-			
-			var correctedMonth = inputMonth - 1
-			
-			localDateTime = new Date(inputYear,correctedMonth,inputDay,inputHour,inputMinute,inputSecond);
-			localTimeStamp = localDateTime.getTime();
-			
-			return localTimeStamp;
-		}
-		
-		// Find Entity Metrics that were selected 
-		function findMetrics(entityType) {
-			var metricsList = [];
-			
-			metricListName = "#" + entityType + "MetricList tr"
-						
-			$(metricListName).each(function(){
-				$(this).find('td pre input').each(function(){
-					if($(this).is(":checked") == true){
-						metricsList.push($(this).val())
-					}
-				})
-			});
-			return metricsList;			
-		}
+        $('#hostID').on('input', function() {
+            var inputHostID=$(this);
+            var inputHostTag = document.getElementById("hostTag");
+            if (inputHostID.val() != "") {
+                inputHostTag.value = ""
+                inputHostTag.setAttribute("disabled","true");
+            }
+            else {
+                inputHostTag.removeAttribute("disabled");
+            }
+        });
 
-		//Gather Metrics & Build out HTML tables for different Entity Types 
-		function collectDataAndBuildCharts(entityType,dynatraceURL,token,entityTypeID,entityTypeTag,startTime,endTime,entityTypeMetricsList) {
-			console.log("Gathering " + entityType + " metrics ...")
-			
-			entityTypeMetricID = entityType + "Metrics"
-			dvTable = document.getElementById(entityTypeMetricID);
-			
-			for (metricIDNum in entityTypeMetricsList) {
-				var dynatraceMetricID = entityTypeMetricsList[metricIDNum]
-				
-				var dtURL = ""
-				
-				if (entityTypeID != "") {
-					var entityList = ""
-					entityTypeIDList = entityTypeID.split(",")
-				
-					if (entityTypeIDList.length > 1) {
-						for (i in entityTypeIDList){
-							entityList += "&entity=" + entityTypeIDList[i].trim()
-						}
-					}
-					else {
-						entityList += "&entity=" + entityTypeID
-					}
-					dtURL += dynatraceURL + "/api/v1/timeseries/" + dynatraceMetricID + "?startTimestamp=" + startTime + "&endTimestamp=" + endTime + entityList + "&includeData=true"
-				}
-				else if (entityTypeTag != "") {
-					var tagList = ""
-					entityTypeTagList = entityTypeTag.split(",")
-				
-					if (entityTypeTagList.length > 1) {
-						for (i in entityTypeTagList){
-							tagList += "&tag=" + entityTypeTagList[i].trim()
-						}
-					}
-					else {
-						tagList += "&tag=" + entityTypeTag
-					}
-					dtURL += dynatraceURL + "/api/v1/timeseries/" + dynatraceMetricID + "?startTimestamp=" + startTime + "&endTimestamp=" + endTime + tagList + "&includeData=true"
-				}			
-				else {
-				dtURL += dynatraceURL + "/api/v1/timeseries/" + dynatraceMetricID + "?startTimestamp=" + startTime + "&endTimestamp=" + endTime + "&includeData=true"
-				}
-				
-				var mainMetricTable = document.createElement("table")
-				mainMetricTable.id = dynatraceMetricID
-				
-				dvTable.appendChild(mainMetricTable);
-				
-				switch (dynatraceMetricID) {
-					case "com.dynatrace.builtin:service.errorcounthttp4xx":
-					case "com.dynatrace.builtin:service.errorcounthttp5xx" : 
-						var metricTableRow = mainMetricTable.insertRow(-1)
-						gatherMetricsRequest(entityType,dtURL,token,dynatraceMetricID,metricTableRow);
-						break;
-					default : 
-						var baseDTURL = dtURL
-						var metricAgg = dynatraceMetricID + "Agg"
-						var aggregationSelection = document.getElementById(metricAgg);
-						var selectedAggList = aggregationSelection.selectedOptions //get Selected Options
-						for (var aggLength=0; aggLength<selectedAggList.length; aggLength++) { // Run through selected aggregations 
-							var aggregationSelectionVal = selectedAggList[aggLength].value;
-							console.log(dynatraceMetricID +" : "+ aggregationSelectionVal + " - Start")
-				
-							if(aggregationSelectionVal != "") {
-								var metricTableRow = mainMetricTable.insertRow(-1)
-								var fullDTURL = baseDTURL + "&aggregationType="+aggregationSelectionVal
-							}
-							gatherMetricsRequest(entityType,fullDTURL,token,dynatraceMetricID,metricTableRow);
-							console.log(dynatraceMetricID +" : "+ aggregationSelectionVal + " - Done")
-							console.log("Being Next Aggregation...")
-						}
-						break;	
-				}
-			}		
-		
-		}
-		
-		function gatherMetricsRequest(entityType,fullDTURL,token,dynatraceMetricID,metricTableRow) {
-			var entityKeys = []
-			var settings = {
-				"async": false,
-				"crossDomain": true,
-				"url": fullDTURL, 
-				"method": "GET",
-				"headers": {
-					"Authorization": "Api-Token " + token,
-					"Content-Type": "application/json",
-				},
-				"processData": false,
-				"data": ""
-				}
-							
-			var request = $.ajax(settings);
-			request.done(function (response) {
-					
-				var apiResponse = response['dataResult']['dataPoints'];
-				var entityTypeName = ""
-				var unit = response['dataResult']['unit']
-				var displayName = response['displayName']
-				var aggregation = response['dataResult']['aggregationType'];
-				var allEntitiesInResponse = response['dataResult']['entities']
-				
-				// to gather all Entity IDs & Names for Report Info
-				for (keys in allEntitiesInResponse) {
-					keyID = keys.toString();
-					valueName = allEntitiesInResponse[keys]
-					allEntityIDNameArr.push([keyID,valueName])
-				}
-				
-				for (keys in apiResponse) {
-					var keyString = keys.toString();
-					entityKeys.push(keyString);
-				}
-				console.log("All Entity Keys : " + entityKeys)
-				
-				console.log("Building HTML Tables...")
-				var table = document.createElement("table")
-				table.border = "1";
-				if (typeof aggregation !== 'undefined') {
-					table.id = dynatraceMetricID + "-" + aggregation
-				}
-				else {
-					table.id = dynatraceMetricID + "-NoAgg"
-				}
-			
-				var tblColumnCount = 2 
-				var tblRow = table.insertRow(-1)
-				
-				for (var x = 0; x < entityKeys.length; x++) {
-					var entity = entityKeys[x]
-				
-					splitEntities = entity.split(', ');
-					entityTypeNameID = splitEntities[0]	
-					entityName = response['dataResult']['entities'][entityTypeNameID]
-				
-					var headerCell1 = document.createElement("TH");
-					if (typeof aggregation !== 'undefined') {
-						if(splitEntities.length > 1 && firstCharIsCapital(splitEntities[1])) {
-							var secondentityTypeID = splitEntities[1]
-							var secondEntityName = response['dataResult']['entities'][secondentityTypeID]
-							headerCell1.innerHTML = "<pre>" + entityTypeNameID + " - " + entityName + " - " + secondEntityName + " : " + displayName + " : " + aggregation + "</pre>";
-						}
-						else if (splitEntities.length > 1) {
-							var dummyKey = splitEntities.shift();
-							var secondEntityString = splitEntities.join(", ");
-							headerCell1.innerHTML = "<pre>" + entityTypeNameID + " - " + entityName + " - " + secondEntityString + " : " + displayName + " : " + aggregation + "</pre>";
-						}
-						else {
-							headerCell1.innerHTML = "<pre>" + entityTypeNameID + " - " + entityName + " : " + displayName + " : " + aggregation + "</pre>";
-						}
-					}
-					else {
-						if(splitEntities.length > 1 && firstCharIsCapital(splitEntities[1])) {
-							var secondentityTypeID = splitEntities[1]
-							var secondEntityName = response['dataResult']['entities'][secondentityTypeID]
-							headerCell1.innerHTML = "<pre>" + entityTypeNameID + " - " + entityName + " - " + secondEntityName + " : " + displayName + "</pre>";
-						}
-						else if (splitEntities.length > 1) {
-							var dummyKey = splitEntities.shift()
-							var secondEntityString = splitEntities.join(", ");
-							headerCell1.innerHTML = "<pre>" + entityTypeNameID + " - " + entityName + " - " + secondEntityString + " : " + displayName + "</pre>";
-						}
-						else {
-							headerCell1.innerHTML = "<pre>" + entityTypeNameID + " - " + entityName + " : " + displayName + "</pre>";
-						}
-					}
-					tblRow.appendChild(headerCell1);
-					var headerCell2 = document.createElement("TH");
-					headerCell2.innerHTML = "";
-					tblRow.appendChild(headerCell2);
-					
-					tblRow = table.insertRow(-1)
-				
-					var headerCell3 = document.createElement("TH");
-					headerCell3.innerHTML = "<pre>Time</pre>"
-					tblRow.appendChild(headerCell3);
-					var headerCell4 = document.createElement("TH");
-					headerCell4.innerHTML = "<pre>" + unit + "</pre>";
-					tblRow.appendChild(headerCell4);
-					
-					
-					for (i in apiResponse[entity]) {
-						tblRow = table.insertRow(-1)
-						
-						var dateTimeUTC = new Date(apiResponse[entity][i][0]);
-						var localDateTime = dateTimeUTC.toLocaleString();
-					
-						var cell1 = tblRow.insertCell(-1);
-						cell1.innerHTML = "<center><pre>" + localDateTime + "</pre></center>"
-						
-						var cell2 = tblRow.insertCell(-1);
-						if (apiResponse[entity][i][1] != null) {
-							cell2.setAttribute("data-type","Number");
-							cell2.setAttribute("data-value",apiResponse[entity][i][1]);
-							cell2.innerHTML = "<pre>" + apiResponse[entity][i][1] + "</pre>"
-						}
-						else {
-							cell2.setAttribute("data-type","String");
-							cell2.setAttribute("data-value","null");
-							cell2.innerHTML = "<pre>" + "null" + "</pre>"
-						}
-					}
-					tblRow = table.insertRow(-1)
-					var cell1 = tblRow.insertCell(-1);
-					cell1.innerHTML = " "
-					var cell2 = tblRow.insertCell(-1);
-					cell2.innerHTML = " "
-					tblRow = table.insertRow(-1)
-				}	
-				//Add new HTML Table to existing tables 
-				metricTableCell = metricTableRow.insertCell(-1)
-				metricTableCell.innerHTML = table.outerHTML
-									
-				//build out charts with data from apiResponse 
-				
-				var buildCharts = document.getElementById("buildCharts")
-				if(buildCharts.checked == true){
-					//set up new chartData DataTable for each entity 
-					var chartData = new google.visualization.DataTable();
-					chartData.addColumn('string', 'Date');
-					
-					console.log("Entering Draw Chart Flow...")
-					
-					var entityPerChartCount = 0
-					var totalEntityCount = 0
-					var chartCount = 0
-					
-					for (var y = 0; y < entityKeys.length; y++) {
-						
-						var entity = entityKeys[y]
-						splitEntities = entity.split(', ');
-						entityTypeNameID = splitEntities[0]	
-						entityName = response['dataResult']['entities'][entityTypeNameID]
-						entityPerChartCount++
-						totalEntityCount++
-						
-						if (typeof aggregation !== 'undefined') {
-							if(splitEntities.length > 1 && firstCharIsCapital(splitEntities[1])) {
-								var secondentityTypeID = splitEntities[1]
-								var secondEntityName = response['dataResult']['entities'][secondentityTypeID]
-								var chartName = displayName + " : " + aggregation 
-								var chartColumnName = entityName + " - " + secondEntityName
-							}
-							else if (splitEntities.length > 1) {
-								var dummyKey = splitEntities.shift();
-								var secondEntityString = splitEntities.join(", ");
-								var chartNumber = y + 1
-								var chartName = displayName + " : " + aggregation
-								var chartColumnName = entityName + " - " + secondEntityString
-							}
-							else {
-								var chartNumber = y + 1
-								var chartName = displayName + " : " + aggregation
-								var chartColumnName = entityName
-							}
-						}
-						else {
-							if(splitEntities.length > 1 && firstCharIsCapital(splitEntities[1])) {
-								var secondentityTypeID = splitEntities[1]
-								var secondEntityName = response['dataResult']['entities'][secondentityTypeID]
-								var chartNumber = y + 1
-								var chartName = displayName
-								var chartColumnName = entityName + " - " + secondEntityName
-							}
-							else if (splitEntities.length > 1) {
-								var dummyKey = splitEntities.shift()
-								var secondEntityString = splitEntities.join(", ");
-								var chartNumber = y + 1
-								var chartName = displayName
-								var chartColumnName = entityName + " - " + secondEntityString
-							}
-							else {
-								var chartNumber = y + 1
-								var chartName = displayName
-								var chartColumnName = entityName
-							}
-						}
-				
-						colIndex = chartData.addColumn('number', chartColumnName);	
-						for (i in apiResponse[entity]) {
-							if (entityPerChartCount == 1) {
-								var dateTimeUTC = new Date(apiResponse[entity][i][0]);
-								var localDateTime = dateTimeUTC.toLocaleString();
-								chartData.addRow([localDateTime,apiResponse[entity][i][1]]);
-							}
-							else {
-								rowInt = parseInt(i) //make sure i is a integer (something weird with setCell method) 
-								chartData.setCell(rowInt,colIndex,apiResponse[entity][i][1]);
-							}
-						}
-						
-						//Text Box Value determines how many Entities to put on each chart 
-						switch (entityType){
-						case "host":
-							var entitiesPerChartValue = document.getElementById('hostEntitiesPerChart').value
-							break;
-						case "process":
-							var entitiesPerChartValue = document.getElementById('processEntitiesPerChart').value
-							break;
-						case "service":
-							var entitiesPerChartValue = document.getElementById('serviceEntitiesPerChart').value
-							break;
-						}		
-						if (entityPerChartCount == entitiesPerChartValue || totalEntityCount == entityKeys.length){
-							// After data is added to chartData Data Table, build new div to place chart
-							// then drawChart 
-							chartCount++ // used to name each chart invidually 
-							chartName = chartName + " - "+chartCount
-							reportDiv = document.getElementById("dataChart")
-							reportDiv.innerHTML = reportDiv.innerHTML + "<div id=\"" + chartName + "\"></div>"
-							console.log("Entering Draw Chart...")
-							chartURI = drawChart(chartName,chartData);
-													
-							//Add download Link below Chart 
-							console.log("Adding Chart Link...")
-							var newChart = document.getElementById(chartName)
-							var data = chartURI.replace(/^data:image\/\w+;base64,/, "");
-							var downloadLink = "data:application/octet-stream;base64," + data
-							
-							downloadLinkHTML = document.createElement('a');
-							downloadLinkHTML.setAttribute("href",downloadLink)
-							downloadLinkHTML.setAttribute("download",chartName+".png")
-							downloadLinkHTML.setAttribute("style","color: white;")
-							downloadLinkHTML.setAttribute("class","chartDownloadLink")
-							downloadLinkHTML.innerHTML = "<center>Download Link</center>"
-							newChart.appendChild(downloadLinkHTML)
-							
-							//start with next batch of entities 
-							var chartData = new google.visualization.DataTable();
-							chartData.addColumn('string', 'date');
-							entityPerChartCount = 0
-						}
-					}
-				}
-			});
-				
-			request.fail(function (response, textStatus) {
-				metricTableCell = metricTableRow.insertCell(-1)
-				metricTableCell.innerHTML = "<p><pre>Request Failed: " + textStatus + "</pre></p>"
-				
-			});
-			entityKeys = []
-		}
-		
-		//Create Report Info Table w/ Start/End Times & Links
-		function createReportInfo (dynatraceURL,localDateTimeStart,startTimeUTC,localDateTimeEnd,endTimeUTC) {
-			
-			var htmlReportInfoText = ""
-			
-			htmlReportInfoText += "<H3> Report Information </H3>"
-			document.getElementById("reportTimingInfo").innerHTML = htmlReportInfoText;
-			
-			var table = document.createElement("table")
-			table.id = "reportInfoTable"
-			var tblRow = table.insertRow(-1)
+        $('#processTag').ready(function(){
+            var inputProcessTag=$(this);
+            var inputProcessID = document.getElementById("processID");
+            if (inputProcessTag.val() != "") {
+                inputProcessID.value = ""
+                inputProcessID.setAttribute("disabled","true");
+            }
+            else {
+                inputProcessID.removeAttribute("disabled");
+            }
+        });
 
-			var cell1 = tblRow.insertCell(-1);
-			cell1.innerHTML = "<pre>Start Time	:</pre>"	
-			var cell2 = tblRow.insertCell(-1);
-			cell2.innerHTML = "<center><pre>" + localDateTimeStart + "</pre></center>"			
-			tblRow = table.insertRow(-1)
-			var cell3 = tblRow.insertCell(-1);
-			cell3.innerHTML = "<pre>End Time	:</pre>"	
-			var cell4 = tblRow.insertCell(-1);
-			cell4.innerHTML = "<center><pre>" + localDateTimeEnd + "</pre></center>"			
-			tblRow = table.insertRow(-1)
-			tblRow = table.insertRow(-1)
-		
-			
-			let allEntityIDNameArrSet = new Set(allEntityIDNameArr.map(JSON.stringify));
-			let allEntityIDNameArrUnique = Array.from(allEntityIDNameArrSet).map(JSON.parse);
-			
-			for (i in allEntityIDNameArrUnique) {
-				var entityID = allEntityIDNameArrUnique[i][0]
-				var entityName = allEntityIDNameArrUnique[i][1]
-								
-				if(entityID.startsWith("HOST-")) {
-					var cell1 = tblRow.insertCell(-1);
-					cell1.innerHTML = "<pre>" + entityName + "</pre>"
-					var cell2 = tblRow.insertCell(-1);
-					cell2.innerHTML = ""
-					tblRow = table.insertRow(-1)
-					var cell3 = tblRow.insertCell(-1);
-					cell3.innerHTML = "<pre>Dynatrace Host Page</pre>"
-					var cell4 = tblRow.insertCell(-1);
-					var dtHostURL = dynatraceURL + "/#newhosts/hostdetails;id=" + entityID + ";gtf=c_" + startTimeUTC + "_" +endTimeUTC+ ";gf=all"
-					cell4.innerHTML = "<pre><a href='"+dtHostURL+"' style='color: white;'>"+dtHostURL+"</a></pre>"
-					tblRow = table.insertRow(-1)
-					tblRow = table.insertRow(-1)
-				}
-				else if (entityID.startsWith("PROCESS_GROUP_INSTANCE-")){
-					var cell1 = tblRow.insertCell(-1);
-					cell1.innerHTML = "<pre>" + entityName + "</pre>"
-					var cell2 = tblRow.insertCell(-1);
-					cell2.innerHTML = ""
-					tblRow = table.insertRow(-1)
-					
-					var cell3 = tblRow.insertCell(-1);
-					cell3.innerHTML = "<pre>Dynatrace Process Page</pre>"
-					var cell4 = tblRow.insertCell(-1);
-					var dtProcessURL = dynatraceURL + "/#processdetails;id=" + entityID + ";gtf=c_" + startTimeUTC + "_" +endTimeUTC+ ";gf=all"
-					cell4.innerHTML = "<pre><a href='"+ dtProcessURL+"' style='color: white;'>"+dtProcessURL+"</a></pre>"
-					tblRow = table.insertRow(-1)
-					tblRow = table.insertRow(-1)
-				}
-				else if (entityID.startsWith("SERVICE-")){
-					var cell1 = tblRow.insertCell(-1);
-					cell1.innerHTML = "<pre>" + entityName + "</pre>"
-					var cell2 = tblRow.insertCell(-1);
-					cell2.innerHTML = ""
-					tblRow = table.insertRow(-1)
-					
-					var cell3 = tblRow.insertCell(-1);
-					cell3.innerHTML = "<pre>Dynatrace Service Page</pre>"
-					var cell4 = tblRow.insertCell(-1);
-					var dtServiceURL = dynatraceURL + "/#newservices/serviceOverview;id=" + entityID + ";gtf=c_" + startTimeUTC + "_" +endTimeUTC+ ";gf=all"
-					cell4.innerHTML = "<pre><a href='"+dtServiceURL+"' style='color: white;'>"+dtServiceURL+"</a></pre>"
-					tblRow = table.insertRow(-1)
-					var cell5 = tblRow.insertCell(-1);
-					cell5.innerHTML = "<pre>Dynatrace Service PurePaths</pre>"
-					var cell6 = tblRow.insertCell(-1);
-					var dtPurePathURL = dynatraceURL + "/#servicecalls;sci=" + entityID + ";timeframe=custom" + startTimeUTC + "to" +endTimeUTC+ ";gf=all"
-					cell6.innerHTML = "<pre><a href='"+dtPurePathURL+"' style='color: white;'>"+dtPurePathURL+"</a></pre>"
-					tblRow = table.insertRow(-1)
-					var cell7 = tblRow.insertCell(-1);
-					cell7.innerHTML = "<pre>Dynatrace Service Exceptions</pre>"
-					var cell8 = tblRow.insertCell(-1);
-					var dtExceptionsURL = dynatraceURL + "/#exceptionsoverview;sci=" + entityID + ";gtf=c_" + startTimeUTC + "_" +endTimeUTC+ ";gf=all"
-					cell8.innerHTML = "<pre><a href='"+dtExceptionsURL+"' style='color: white;'>"+dtExceptionsURL+"</a></pre>"
-					tblRow = table.insertRow(-1)
-					tblRow = table.insertRow(-1)
-				}
-				else { /*DO NOTHING*/ }
-			}
-		
-		document.getElementById("reportTimingInfo").appendChild(table);
-		}
-		
-		//From all Tables created build out Excel Button 
-		function createExcelButton (collectHostMetrics,fullHostMetricsList,collectProcessMetrics,fullProcessMetricsList,collectServiceMetrics, fullServiceMetricsList) {
-		
-			//format metric list correctly for excel download 
-			
-			var downloadButtonHTML = ""
-			
-			if(collectHostMetrics == true) {
-				var hostMetricsListTrimmed = []
-				var collectedHostMetricsList = []
-				var hostMetricCount = 0
-				
-				for (metric in fullHostMetricsList){
-					metricTableName = fullHostMetricsList[metric]
-					var table = document.getElementById(metricTableName);
-					var rows = table.getElementsByTagName("tr")
-					if (rows.length > 1) {
-						collectedHostMetricsList.push(metricTableName)
-						hostMetricCount ++;
-					}
-				}
-			
-				if (hostMetricCount >= 1) {
-					for (metric in collectedHostMetricsList) {
-						var metricName = collectedHostMetricsList[metric]
-						var splitMetricName = metricName.split(":");
-						hostMetricsListTrimmed.push(splitMetricName[1]);
-					}
-				}
-			}
-			
-			
-			if(collectProcessMetrics == true) {
-				var processMetricsListTrimmed = []
-				var collectedProcessMetricsList = []
-				var processMetricCount = 0
-				
-				for (metric in fullProcessMetricsList){
-					metricTableName = fullProcessMetricsList[metric]
-					var table = document.getElementById(metricTableName);
-					var rows = table.getElementsByTagName("tr")
-					if (rows.length > 1) {
-						collectedProcessMetricsList.push(metricTableName)
-						processMetricCount ++;
-					}
-				}
-				if (processMetricCount >= 1) {
-					for (metric in collectedProcessMetricsList) {
-						var metricName = collectedProcessMetricsList[metric]
-						var splitMetricName = metricName.split(":");
-						processMetricsListTrimmed.push(splitMetricName[1]);
-					}
-				}
-			}
-			
-			if(collectServiceMetrics == true) {
-				var serviceMetricsListTrimmed = []
-				var collectedServiceMetricsList = []
-				var serviceMetricCount = 0
-				
-				for (metric in fullServiceMetricsList){
-					metricTableName = fullServiceMetricsList[metric]
-					var table = document.getElementById(metricTableName);
-					var rows = table.getElementsByTagName("tr")
-					if (rows.length > 1) {
-						collectedServiceMetricsList.push(metricTableName)
-						serviceMetricCount ++;
-					}
-				}
-				if (serviceMetricCount >= 1) {
-					for (metric in collectedServiceMetricsList) {
-						var metricName = collectedServiceMetricsList[metric]
-						var splitMetricName = metricName.split(":");
-						serviceMetricsListTrimmed.push(splitMetricName[1]);
-					}
-				}
-			}			
-			
-			if (collectHostMetrics== true && collectProcessMetrics == true && collectServiceMetrics == true){
-				dynatraceMetricNameString = hostMetricsListTrimmed.join("','") + "','" + processMetricsListTrimmed.join("','")+ "','" + serviceMetricsListTrimmed.join("','");
-				dynatraceMetricTableString = collectedHostMetricsList.join("','") + "','" + collectedProcessMetricsList.join("','")+ "','" + collectedServiceMetricsList.join("','");			
-				downloadButtonHTML += "<button onclick=\"tables2Excel(['reportInfoTable','"+dynatraceMetricTableString+"'],['Report_Info','"+dynatraceMetricNameString+"'])\">Download Raw Data to Excel</button>"
-			}
-			else if (collectHostMetrics== true && collectProcessMetrics == true && collectServiceMetrics == false){
-				dynatraceMetricNameString = hostMetricsListTrimmed.join("','") + "','" + processMetricsListTrimmed.join("','");
-				dynatraceMetricTableString = collectedHostMetricsList.join("','") + "','" + collectedProcessMetricsList.join("','");			
-				downloadButtonHTML += "<button onclick=\"tables2Excel(['reportInfoTable','"+dynatraceMetricTableString+"'],['Report_Info','"+dynatraceMetricNameString+"'])\">Download Raw Data to Excel</button>"
-			}
-			else if (collectHostMetrics== true && collectProcessMetrics == false && collectServiceMetrics == true){
-				dynatraceMetricNameString = hostMetricsListTrimmed.join("','") + "','" + serviceMetricsListTrimmed.join("','");
-				dynatraceMetricTableString = collectedHostMetricsList.join("','") + "','" + collectedServiceMetricsList.join("','");			
-				downloadButtonHTML += "<button onclick=\"tables2Excel(['reportInfoTable','"+dynatraceMetricTableString+"'],['Report_Info','"+dynatraceMetricNameString+"'])\">Download Raw Data to Excel</button>"
-			}
-			else if (collectHostMetrics== true && collectProcessMetrics == false && collectServiceMetrics == false) {
-				dynatraceMetricNameString = hostMetricsListTrimmed.join("','")
-				dynatraceMetricTableString = collectedHostMetricsList.join("','")
-				downloadButtonHTML += "<button onclick=\"tables2Excel(['reportInfoTable','"+dynatraceMetricTableString+"'],['Report_Info','"+dynatraceMetricNameString+"'])\">Download Raw Data to Excel</button>"
-			}
-			else if (collectHostMetrics== false && collectProcessMetrics == true && collectServiceMetrics == false) {
-				dynatraceMetricNameString = processMetricsListTrimmed.join("','");
-				dynatraceMetricTableString = collectedProcessMetricsList.join("','");
-				downloadButtonHTML += "<button onclick=\"tables2Excel(['reportInfoTable','"+dynatraceMetricTableString+"'],['Report_Info','"+dynatraceMetricNameString+"'])\">Download Raw Data to Excel</button>"
-			}
-			else if (collectHostMetrics== false && collectProcessMetrics == false && collectServiceMetrics == true) {
-				dynatraceMetricNameString = serviceMetricsListTrimmed.join("','");
-				dynatraceMetricTableString = collectedServiceMetricsList.join("','");
-				downloadButtonHTML += "<button onclick=\"tables2Excel(['reportInfoTable','"+dynatraceMetricTableString+"'],['Report_Info','"+dynatraceMetricNameString+"'])\">Download Raw Data to Excel</button>"
-			}
-			else if (collectHostMetrics== false && collectProcessMetrics == true && collectServiceMetrics == true) {
-				dynatraceMetricNameString = processMetricsListTrimmed.join("','") + "','" + serviceMetricsListTrimmed.join("','");
-				dynatraceMetricTableString = collectedProcessMetricsList.join("','") + "','" + collectedServiceMetricsList.join("','");
-				downloadButtonHTML += "<button onclick=\"tables2Excel(['reportInfoTable','"+dynatraceMetricTableString+"'],['Report_Info','"+dynatraceMetricNameString+"'])\">Download Raw Data to Excel</button>"
-			}
-			document.getElementById("downloadButton").innerHTML = downloadButtonHTML;
-		}
-		
-		function firstCharIsCapital (word) {
-			return word[0] !== word[0].toLowerCase();
-		}
-	});		
+        $('#processID').on('input', function() {
+            var inputProcessID=$(this);
+            var inputProcessTag = document.getElementById("processTag");
+            if (inputProcessID.val() != "") {
+                inputProcessTag.value = ""
+                inputProcessTag.setAttribute("disabled","true");
+            }
+            else {
+                inputProcessTag.removeAttribute("disabled");
+            }
+        });
+
+        $('#serviceTag').on('input', function() {
+            var inputServiceTag=$(this);
+            var inputServiceID = document.getElementById("serviceID");
+            if (inputServiceTag.val() != "") {
+                inputServiceID.value = ""
+                inputServiceID.setAttribute("disabled","true");
+            }
+            else {
+                inputServiceID.removeAttribute("disabled");
+            }
+        });
+
+        $('#serviceID').on('input', function() {
+            var inputServiceID=$(this);
+            var inputServiceTag = document.getElementById("serviceTag");
+            if (inputServiceID.val() != "") {
+                inputServiceTag.value = ""
+                inputServiceTag.setAttribute("disabled","true");
+            }
+            else {
+                inputServiceTag.removeAttribute("disabled");
+            }
+        });
+        //End entity id or entity tag input validation
+
+        //Start Show Metric Type Section
+        $('#showHostMetricsSection').on('input', function() {
+            var hostSection = document.getElementById("hostMetricsSection");
+            var timeSection = document.getElementById("timeSection");
+            var reportSection = document.getElementById("reportSection");
+            var hostMetricsLabel = document.getElementById("hostMetricsLabel");
+            var processMetricsLabel = document.getElementById("processMetricsLabel");
+            var serviceMetricsLabel = document.getElementById("serviceMetricsLabel");
+
+            if($(this).is(":checked") == true){
+                hostSection.setAttribute("class","show");
+                timeSection.setAttribute("class","show");
+                reportSection.setAttribute("class","show");
+                hostMetricsLabel.setAttribute("class","hide");
+                processMetricsLabel.setAttribute("class","hide");
+                serviceMetricsLabel.setAttribute("class","hide");
+                collectHostMetrics = true
+            }
+            else {
+                collectHostMetrics = false
+                hostSection.setAttribute("class","hide");
+                if (collectHostMetrics == false && collectProcessMetrics == false && collectServiceMetrics == false){
+                    timeSection.setAttribute("class","hide");
+                    reportSection.setAttribute("class","hide");
+                }
+
+            }
+
+        });
+
+        $('#showProcessMetricsSection').on('input', function() {
+            var processSection = document.getElementById("processMetricsSection");
+            var timeSection = document.getElementById("timeSection");
+            var reportSection = document.getElementById("reportSection");
+            var hostMetricsLabel = document.getElementById("hostMetricsLabel");
+            var processMetricsLabel = document.getElementById("processMetricsLabel");
+            var serviceMetricsLabel = document.getElementById("serviceMetricsLabel");
+
+            if($(this).is(":checked") == true){
+                processSection.setAttribute("class","show");
+                timeSection.setAttribute("class","show");
+                reportSection.setAttribute("class","show");
+                hostMetricsLabel.setAttribute("class","hide");
+                processMetricsLabel.setAttribute("class","hide");
+                serviceMetricsLabel.setAttribute("class","hide");
+                collectProcessMetrics = true
+            }
+            else {
+                collectProcessMetrics = false
+                processSection.setAttribute("class","hide");
+                if (collectHostMetrics == false && collectProcessMetrics == false && collectServiceMetrics == false){
+                    timeSection.setAttribute("class","hide");
+                    reportSection.setAttribute("class","hide");
+                }
+            }
+
+        });
+
+        $('#showServiceMetricsSection').on('input', function() {
+            var serviceSection = document.getElementById("serviceMetricsSection");
+            var timeSection = document.getElementById("timeSection");
+            var reportSection = document.getElementById("reportSection");
+            var hostMetricsLabel = document.getElementById("hostMetricsLabel");
+            var processMetricsLabel = document.getElementById("processMetricsLabel");
+            var serviceMetricsLabel = document.getElementById("serviceMetricsLabel");
+
+            if($(this).is(":checked") == true){
+                serviceSection.setAttribute("class","show");
+                timeSection.setAttribute("class","show");
+                reportSection.setAttribute("class","show");
+                hostMetricsLabel.setAttribute("class","hide");
+                processMetricsLabel.setAttribute("class","hide");
+                serviceMetricsLabel.setAttribute("class","hide");
+                collectServiceMetrics = true
+            }
+            else {
+                collectServiceMetrics = false
+                serviceSection.setAttribute("class","hide");
+                if (collectHostMetrics == false && collectProcessMetrics == false && collectServiceMetrics == false){
+                    timeSection.setAttribute("class","hide");
+                    reportSection.setAttribute("class","hide");
+                }
+            }
+
+        });
+        // End Show Metric Type Section
+
+        //Start Date Time Validations
+        //Start Start Date Time Validations
+        $('#startMonth').on("input click", function() {
+        var input=$(this);
+        var monthNumber=input.val();
+        if(monthNumber && $.isNumeric(monthNumber) && monthNumber >= 1 && monthNumber <=12)
+            {input.removeClass("invalid").addClass("valid");
+             validStartMonth = true
+            }
+        else
+            {input.removeClass("valid").addClass("invalid");
+             validStartMonth = false
+            }
+        });
+
+        $('#startDay').on("input click", function() {
+        var input=$(this);
+        var dayNumber=input.val();
+        if(dayNumber && $.isNumeric(dayNumber) && dayNumber >= 1 && dayNumber <=31)
+            {
+             input.removeClass("invalid").addClass("valid");
+             validStartDay = true
+            }
+        else
+            {input.removeClass("valid").addClass("invalid");
+             validStartDay = false
+            }
+        });
+
+        $('#startYear').on("input click", function() {
+        var input=$(this);
+        var inputDay=$('#startDay');
+        var inputMonth=$('#startMonth');
+
+        var yearNumber=input.val();
+        var dayNumber=inputDay.val();
+        var monthNumber=inputMonth.val();
+
+        if (input.val() != ""){
+            inputDay.prop('disabled',true);
+            inputMonth.prop('disabled',true);
+
+            if(yearNumber && $.isNumeric(yearNumber) && yearNumber >= 2015 && yearNumber <=2030 && checkDate(dayNumber,monthNumber,yearNumber))
+                {input.removeClass("invalid").addClass("valid");
+                validStartYear = true
+                }
+            else
+                {input.removeClass("valid").addClass("invalid");
+                validStartYear = false
+                }
+        }
+        else {
+            inputDay.prop('disabled',false);
+            inputMonth.prop('disabled',false);
+            input.removeClass("valid").addClass("invalid");
+        }
+        });
+
+        $('#startHour').on("input click", function() {
+        var input=$(this);
+        var hourNumber=input.val();
+        if(hourNumber && $.isNumeric(hourNumber) && hourNumber >= 0 && hourNumber <=23)
+            {input.removeClass("invalid").addClass("valid");
+             validStartHour = true
+            }
+        else
+            {input.removeClass("valid").addClass("invalid");
+             validStartHour = false
+            }
+        });
+
+        $('#startMinute').on("input click", function() {
+        var input=$(this);
+        var minuteNumber=input.val();
+        if(minuteNumber && $.isNumeric(minuteNumber) && minuteNumber >= 0 && minuteNumber <=59)
+            {input.removeClass("invalid").addClass("valid");
+             validStartMinute = true
+            }
+        else
+            {input.removeClass("valid").addClass("invalid");
+             validStartMinute = false
+            }
+        });
+
+        $('#startSecond').on("input click", function() {
+        var input=$(this);
+        var secondNumber=input.val();
+        if(secondNumber && $.isNumeric(secondNumber) && secondNumber >= 0 && secondNumber <=59)
+            {input.removeClass("invalid").addClass("valid");
+             validStartSecond = true
+            }
+        else
+            {input.removeClass("valid").addClass("invalid");
+             validStartSecond = false
+            }
+        });
+        // End Start Date Time Validations
+
+        //End Date Time Validations
+        $('#endMonth').on("input click", function() {
+        var input=$(this);
+        var monthNumber=input.val();
+        if(monthNumber && $.isNumeric(monthNumber) && monthNumber >= 1 && monthNumber <=12)
+            {input.removeClass("invalid").addClass("valid");
+             validEndMonth = true
+            }
+        else
+            {input.removeClass("valid").addClass("invalid");
+             validEndMonth = false
+            }
+        });
+
+        $('#endDay').on("input click", function() {
+        var input=$(this);
+        var dayNumber=input.val();
+        if(dayNumber && $.isNumeric(dayNumber) && dayNumber >= 1 && dayNumber <=31)
+            {input.removeClass("invalid").addClass("valid");
+             validEndDay = true
+            }
+        else
+            {input.removeClass("valid").addClass("invalid");
+             validEndDay = false
+            }
+        });
+
+        $('#endYear').on("input click", function() {
+        var input=$(this);
+        var inputDay=$('#endDay');
+        var inputMonth=$('#endMonth');
+
+        var yearNumber=input.val();
+        var dayNumber=inputDay.val();
+        var monthNumber=inputMonth.val();
+
+        if (input.val() != ""){
+            inputDay.prop('disabled',true);
+            inputMonth.prop('disabled',true);
+
+            if(yearNumber && $.isNumeric(yearNumber) && yearNumber >= 2015 && yearNumber <=2030 && checkDate(dayNumber,monthNumber,yearNumber))
+                {input.removeClass("invalid").addClass("valid");
+                validEndYear = true
+                }
+            else
+                {input.removeClass("valid").addClass("invalid");
+                validEndYear = false
+                }
+        }
+        else {
+            inputDay.prop('disabled',false);
+            inputMonth.prop('disabled',false);
+            input.removeClass("valid").addClass("invalid");
+        }
+        });
+
+        $('#endHour').on("input click", function() {
+        var input=$(this);
+        var hourNumber=input.val();
+        if(hourNumber && $.isNumeric(hourNumber) && hourNumber >= 0 && hourNumber <=23)
+            {input.removeClass("invalid").addClass("valid");
+             validEndHour = true
+            }
+        else
+            {input.removeClass("valid").addClass("invalid");
+             validEndHour = false
+            }
+        });
+
+        $('#endMinute').on("input click", function() {
+        var input=$(this);
+        var minuteNumber=input.val();
+        if(minuteNumber && $.isNumeric(minuteNumber) && minuteNumber >= 0 && minuteNumber <=59)
+            {input.removeClass("invalid").addClass("valid");
+             validEndMinute = true
+            }
+        else
+            {input.removeClass("valid").addClass("invalid");
+             validEndMinute = false
+            }
+        });
+
+        $('#endSecond').on("input click", function() {
+        var input=$(this);
+        var secondNumber=input.val();
+        if(secondNumber && $.isNumeric(secondNumber) && secondNumber >= 0 && secondNumber <=59)
+            {input.removeClass("invalid").addClass("valid");
+             validEndSecond = true
+            }
+        else
+            {input.removeClass("valid").addClass("invalid");
+             validEndSecond = false
+            }
+        });
+        // End End Date Time Validations
+        // End Time Validation Methods
+
+        //Automatic Start & End Time additions
+        $('#lastOneHour').on("click", function() {
+            //Start Date/Time Auto Fill
+            var now = new Date();
+            $('#startMonth').val(now.getMonth()+1).click();
+            $('#startDay').val(now.getDate()).click();
+            $('#startYear').val(now.getFullYear()).click();
+            if (now.getHours()-1 > 0) {
+                $('#startHour').val(now.getHours()-1).click();
+                $('#startMinute').val(now.getMinutes()).click();
+            }
+            else {
+                $('#startHour').val("00").click();
+                $('#startMinute').val("00").click();
+            }
+            $('#startSecond').val("00").click();
+
+            //End Date/Time Auto Fill
+            $('#endMonth').val(now.getMonth()+1).click();
+            $('#endDay').val(now.getDate()).click();
+            $('#endYear').val(now.getFullYear()).click();
+            $('#endHour').val(now.getHours()).click();
+            $('#endMinute').val(now.getMinutes()).click();
+            $('#endSecond').val("00").click();
+            //End Auto Date/Time Fill Section
+        });
+
+        //validation for Entities per chart text box
+        $('#hostEntitiesPerChart').on('input', function() {
+        var input=$(this);
+        var entitiesPerChartNumber=input.val();
+        if(entitiesPerChartNumber && $.isNumeric(entitiesPerChartNumber) && entitiesPerChartNumber > 0 && entitiesPerChartNumber <=50)
+            {input.removeClass("invalid").addClass("valid");
+             validEntitiesPerChart = true
+            }
+        else
+            {input.removeClass("valid").addClass("invalid");
+             validEntitiesPerChart = false
+            }
+        });
+
+        $('#processEntitiesPerChart').on('input', function() {
+        var input=$(this);
+        var entitiesPerChartNumber=input.val();
+        if(entitiesPerChartNumber && $.isNumeric(entitiesPerChartNumber) && entitiesPerChartNumber > 0 && entitiesPerChartNumber <=50)
+            {input.removeClass("invalid").addClass("valid");
+             validEntitiesPerChart = true
+            }
+        else
+            {input.removeClass("valid").addClass("invalid");
+             validEntitiesPerChart = false
+            }
+        });
+
+        $('#serviceEntitiesPerChart').on('input', function() {
+        var input=$(this);
+        var entitiesPerChartNumber=input.val();
+        if(entitiesPerChartNumber && $.isNumeric(entitiesPerChartNumber) && entitiesPerChartNumber > 0 && entitiesPerChartNumber <=50)
+            {input.removeClass("invalid").addClass("valid");
+             validEntitiesPerChart = true
+            }
+        else
+            {input.removeClass("valid").addClass("invalid");
+             validEntitiesPerChart = false
+            }
+        });
+
+        // Start Validate Time Button Method
+        $('#validateTimeButton').click(function() {
+            if (validStartMonth == true && validStartDay == true && validStartYear == true
+                && validStartHour == true && validStartMinute == true && validStartSecond == true
+                && validEndMonth == true && validEndDay == true && validEndYear == true
+                && validEndHour == true    && validEndMinute == true && validEndSecond == true) {
+                alert('No Errors Found : Please proceed')
+                validTime = true
+                console.log("Time Validated Successfully")
+
+            }
+            else {
+                alert('Errors Found : Please Fix Date & Time. You May need to refresh the page.')
+                validTime = false
+            }
+        });
+
+        function checkDate(Day,Month,Year) {
+            if (Month == 2 && Year % 4 == 0 && Day > 29) {
+                return false;
+            }
+            else if (Month == 2 && Year %4 != 0 && Day > 28) {
+                return false;
+            }
+            else if (Month % 2 == 0 && Day > 30) {
+                return false;
+            }
+            else
+                return true;
+        }
+        // End Validate Time Button Methods
+
+        // Click on Run Report Button to kick everything off
+        $('#runReportButton').click(function() {
+            if (validTime == true && (collectHostMetrics == true || collectProcessMetrics == true || collectServiceMetrics == true)) {
+                console.log("Starting Report Run ...")
+
+                var dvHostTable = document.getElementById("hostMetrics");
+                var dvProcessTable = document.getElementById("processMetrics");
+                var dvServiceTable = document.getElementById("serviceMetrics");
+                var dvReportSection = document.getElementById("dataChart");
+
+                var hostMetricsLabel = document.getElementById("hostMetricsLabel");
+                var processMetricsLabel = document.getElementById("processMetricsLabel");
+                var serviceMetricsLabel = document.getElementById("serviceMetricsLabel");
+
+                dvHostTable.innerHTML = ""
+                dvProcessTable.innerHTML = ""
+                dvServiceTable.innerHTML = ""
+                dvReportSection.innerHTML = ""
+
+                hostMetricsLabel.setAttribute("class","hide");
+                processMetricsLabel.setAttribute("class","hide");
+                serviceMetricsLabel.setAttribute("class","hide");
+
+                var inputURLValue=$('#dynatraceURL').val();
+                var inputTokenValue=$('#dynatraceToken').val();
+                var inputHostIDValue=$('#hostID').val();
+                var inputHostTagValue=$('#hostTag').val();
+                var inputProcessIDValue=$('#processID').val();
+                var inputProcessTagValue=$('#processTag').val();
+                var inputServiceIDValue=$('#serviceID').val();
+                var inputServiceTagValue=$('#serviceTag').val();
+
+                var startTimeUTC = calculateStartTime();
+                var endTimeUTC = calculateEndTime();
+                var timeDelta = endTimeUTC - startTimeUTC
+
+                var dateTimeStartUTC = new Date(startTimeUTC);
+                var localDateTimeStart = dateTimeStartUTC.toLocaleString();
+
+                var dateTimeEndUTC = new Date(endTimeUTC);
+                var localDateTimeEnd = dateTimeEndUTC.toLocaleString();
+
+                var hostMetricsList = []
+                var processMetricsList = []
+                var serviceMetricsList = []
+
+                console.log("Start Time : " + localDateTimeStart + " : " + startTimeUTC)
+                console.log("End Time   : " + localDateTimeEnd + " : " + endTimeUTC)
+
+                //check if timeframe is smaller than 6 months and not backwards
+                if (timeDelta > 0 && timeDelta <= 14342400000) {
+
+                    if (collectHostMetrics == true) {
+                        hostMetricsList = findMetrics("host");
+                        //hostMetricsLabel.setAttribute("class","show");
+                        collectDataAndBuildCharts("host",inputURLValue,inputTokenValue,inputHostIDValue,inputHostTagValue,startTimeUTC,endTimeUTC,hostMetricsList)
+                    }
+
+                    if (collectProcessMetrics == true) {
+                        processMetricsList = findMetrics("process");
+                        //processMetricsLabel.setAttribute("class","show");
+                        collectDataAndBuildCharts("process",inputURLValue,inputTokenValue,inputProcessIDValue,inputProcessTagValue,startTimeUTC,endTimeUTC,processMetricsList)
+                    }
+
+                    if (collectServiceMetrics == true) {
+                        serviceMetricsList = findMetrics("service");
+                        //serviceMetricsLabel.setAttribute("class","show");
+                        collectDataAndBuildCharts("service",inputURLValue,inputTokenValue,inputServiceIDValue,inputServiceTagValue,startTimeUTC,endTimeUTC,serviceMetricsList)
+                    }
+
+                    createReportInfo(inputURLValue,localDateTimeStart,startTimeUTC,localDateTimeEnd,endTimeUTC)
+                    createExcelButton(collectHostMetrics,hostMetricsList,collectProcessMetrics,processMetricsList,collectServiceMetrics,serviceMetricsList)
+
+                    if(document.getElementById("buildCharts").checked == false)
+                    {
+                        console.log("No Charts Built, Showing HTML Table...");
+                        document.getElementById("dataTable").setAttribute("class","show");
+                        document.getElementById("chartButton").setAttribute("class","hide");
+                    }
+                    else
+                    {
+                        document.getElementById("tableButton").setAttribute("class","show");
+                        document.getElementById("downloadAllButtonCell").setAttribute("class","show");
+                    }
+                    console.log("Report Completed...")
+                }
+                else {
+                    alert("Time Frame Not Right, Try Again by Refreshing the Page")
+                    console.log("Time Frame is either larger than ~5.5 Months or End Time is Before Start Time")
+                }
+            }
+            else {
+                alert('Input Time not Valid or No Metrics Selected, Try Again')
+            }
+        });
+
+        $('#downloadAllButton').click(function () {
+                console.log("Downloading all chart images...")
+                var allImageLinks = $('.chartDownloadLink');
+                var zip = new JSZip();
+                var count = 0;
+                var zipFileName = "ChartImages.zip";
+
+                console.log
+
+                allImageLinks.each(function () {
+                    var chartName = $(this).attr('download');
+                    var url = $(this).attr('href');
+
+
+                    // remove special characters to make filename safe
+                    var fileName = chartName.replace(/:/g,"-");
+                    fileName = fileName.replace(/\\/g,"");
+                    fileName = fileName.replace(/\//g,"");
+                    fileName = fileName.replace(/\*/g,"");
+                    fileName = fileName.replace(/\?/g,"");
+                    fileName = fileName.replace(/\"/g,"");
+                    fileName = fileName.replace(/\</g,"");
+                    fileName = fileName.replace(/\>/g,"");
+                    fileName = fileName.replace(/\|/g,"");
+                    //remove first part of data URL so that the data is extracted
+                    data = url.replace(/^data:application\/octet-stream;base64,/, "");
+
+                    zip.file(fileName, data, { base64: true });
+                    count++;
+                    if (count == allImageLinks.length) {
+                        zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: {level:9}}).then(function (content) {
+                            saveAs(content, zipFileName);
+                        });
+                    }
+                });
+        });
+
+        //Calculate Start & End Times from input
+        function calculateStartTime() {
+            var inputDay=$('#startDay').val();
+            var inputMonth=$('#startMonth').val();
+            var inputYear=$('#startYear').val();
+            var inputHour=$('#startHour').val();
+            var inputMinute=$('#startMinute').val();
+            var inputSecond=$('#startSecond').val();
+
+            var correctedMonth = inputMonth - 1
+
+            localDateTime = new Date(inputYear,correctedMonth,inputDay,inputHour,inputMinute,inputSecond);
+            localTimeStamp = localDateTime.getTime();
+
+            return localTimeStamp;
+        }
+
+        function calculateEndTime() {
+            var inputDay=$('#endDay').val();
+            var inputMonth=$('#endMonth').val();
+            var inputYear=$('#endYear').val();
+            var inputHour=$('#endHour').val();
+            var inputMinute=$('#endMinute').val();
+            var inputSecond=$('#endSecond').val();
+
+            var correctedMonth = inputMonth - 1
+
+            localDateTime = new Date(inputYear,correctedMonth,inputDay,inputHour,inputMinute,inputSecond);
+            localTimeStamp = localDateTime.getTime();
+
+            return localTimeStamp;
+        }
+
+        // Find Entity Metrics that were selected
+        function findMetrics(entityType) {
+            var metricsList = [];
+
+            metricListName = "#" + entityType + "MetricList tr"
+
+            $(metricListName).each(function(){
+                $(this).find('td pre input').each(function(){
+                    if($(this).is(":checked") == true){
+                        metricsList.push($(this).val())
+                    }
+                })
+            });
+            return metricsList;
+        }
+
+        //Gather Metrics & Build out HTML tables for different Entity Types
+        function collectDataAndBuildCharts(entityType,dynatraceURL,token,entityTypeID,entityTypeTag,startTime,endTime,entityTypeMetricsList) {
+            console.log("Gathering " + entityType + " metrics ...")
+
+            entityTypeMetricID = entityType + "Metrics"
+            dvTable = document.getElementById(entityTypeMetricID);
+
+            for (metricIDNum in entityTypeMetricsList) {
+                var dynatraceMetricID = entityTypeMetricsList[metricIDNum]
+
+                var dtURL = ""
+
+                if (entityTypeID != "") {
+                    var entityList = ""
+                    entityTypeIDList = entityTypeID.split(",")
+
+                    if (entityTypeIDList.length > 1) {
+                        for (i in entityTypeIDList){
+                            entityList += "&entity=" + entityTypeIDList[i].trim()
+                        }
+                    }
+                    else {
+                        entityList += "&entity=" + entityTypeID
+                    }
+                    dtURL += dynatraceURL + "/api/v1/timeseries/" + dynatraceMetricID + "?startTimestamp=" + startTime + "&endTimestamp=" + endTime + entityList + "&includeData=true"
+                }
+                else if (entityTypeTag != "") {
+                    var tagList = ""
+                    entityTypeTagList = entityTypeTag.split(",")
+
+                    if (entityTypeTagList.length > 1) {
+                        for (i in entityTypeTagList){
+                            tagList += "&tag=" + entityTypeTagList[i].trim()
+                        }
+                    }
+                    else {
+                        tagList += "&tag=" + entityTypeTag
+                    }
+                    dtURL += dynatraceURL + "/api/v1/timeseries/" + dynatraceMetricID + "?startTimestamp=" + startTime + "&endTimestamp=" + endTime + tagList + "&includeData=true"
+                }
+                else {
+                dtURL += dynatraceURL + "/api/v1/timeseries/" + dynatraceMetricID + "?startTimestamp=" + startTime + "&endTimestamp=" + endTime + "&includeData=true"
+                }
+
+                var mainMetricTable = document.createElement("table")
+                mainMetricTable.id = dynatraceMetricID
+
+                dvTable.appendChild(mainMetricTable);
+
+                switch (dynatraceMetricID) {
+                    case "com.dynatrace.builtin:service.errorcounthttp4xx":
+                    case "com.dynatrace.builtin:service.errorcounthttp5xx" :
+                        var metricTableRow = mainMetricTable.insertRow(-1)
+                        gatherMetricsRequest(entityType,dtURL,token,dynatraceMetricID,metricTableRow);
+                        break;
+                    default :
+                        var baseDTURL = dtURL
+                        var metricAgg = dynatraceMetricID + "Agg"
+                        var aggregationSelection = document.getElementById(metricAgg);
+                        var selectedAggList = aggregationSelection.selectedOptions //get Selected Options
+                        for (var aggLength=0; aggLength<selectedAggList.length; aggLength++) { // Run through selected aggregations
+                            var aggregationSelectionVal = selectedAggList[aggLength].value;
+                            console.log(dynatraceMetricID +" : "+ aggregationSelectionVal + " - Start")
+
+                            if(aggregationSelectionVal != "") {
+                                var metricTableRow = mainMetricTable.insertRow(-1)
+                                var fullDTURL = baseDTURL + "&aggregationType="+aggregationSelectionVal
+                            }
+                            gatherMetricsRequest(entityType,fullDTURL,token,dynatraceMetricID,metricTableRow);
+                            console.log(dynatraceMetricID +" : "+ aggregationSelectionVal + " - Done")
+                            console.log("Being Next Aggregation...")
+                        }
+                        break;
+                }
+            }
+
+        }
+
+        function gatherMetricsRequest(entityType,fullDTURL,token,dynatraceMetricID,metricTableRow) {
+            var entityKeys = []
+            var settings = {
+                "async": false,
+                "crossDomain": true,
+                "url": fullDTURL,
+                "method": "GET",
+                "headers": {
+                    "Authorization": "Api-Token " + token,
+                    "Content-Type": "application/json",
+                },
+                "processData": false,
+                "data": ""
+                }
+
+            var request = $.ajax(settings);
+            request.done(function (response) {
+
+                var apiResponse = response['dataResult']['dataPoints'];
+                var entityTypeName = ""
+                var unit = response['dataResult']['unit']
+                var displayName = response['displayName']
+                var aggregation = response['dataResult']['aggregationType'];
+                var allEntitiesInResponse = response['dataResult']['entities']
+
+                // to gather all Entity IDs & Names for Report Info
+                for (keys in allEntitiesInResponse) {
+                    keyID = keys.toString();
+                    valueName = allEntitiesInResponse[keys]
+                    allEntityIDNameArr.push([keyID,valueName])
+                }
+
+                for (keys in apiResponse) {
+                    var keyString = keys.toString();
+                    entityKeys.push(keyString);
+                }
+                console.log("All Entity Keys : " + entityKeys)
+
+                console.log("Building HTML Tables...")
+                var table = document.createElement("table")
+                table.border = "1";
+                if (typeof aggregation !== 'undefined') {
+                    table.id = dynatraceMetricID + "-" + aggregation
+                }
+                else {
+                    table.id = dynatraceMetricID + "-NoAgg"
+                }
+
+                var tblColumnCount = 2
+                var tblRow = table.insertRow(-1)
+
+                for (var x = 0; x < entityKeys.length; x++) {
+                    var entity = entityKeys[x]
+
+                    splitEntities = entity.split(', ');
+                    entityTypeNameID = splitEntities[0]
+                    entityName = response['dataResult']['entities'][entityTypeNameID]
+
+                    var headerCell1 = document.createElement("TH");
+                    if (typeof aggregation !== 'undefined') {
+                        if(splitEntities.length > 1 && firstCharIsCapital(splitEntities[1])) {
+                            var secondentityTypeID = splitEntities[1]
+                            var secondEntityName = response['dataResult']['entities'][secondentityTypeID]
+                            headerCell1.innerHTML = "<pre>" + entityTypeNameID + " - " + entityName + " - " + secondEntityName + " : " + displayName + " : " + aggregation + "</pre>";
+                        }
+                        else if (splitEntities.length > 1) {
+                            var dummyKey = splitEntities.shift();
+                            var secondEntityString = splitEntities.join(", ");
+                            headerCell1.innerHTML = "<pre>" + entityTypeNameID + " - " + entityName + " - " + secondEntityString + " : " + displayName + " : " + aggregation + "</pre>";
+                        }
+                        else {
+                            headerCell1.innerHTML = "<pre>" + entityTypeNameID + " - " + entityName + " : " + displayName + " : " + aggregation + "</pre>";
+                        }
+                    }
+                    else {
+                        if(splitEntities.length > 1 && firstCharIsCapital(splitEntities[1])) {
+                            var secondentityTypeID = splitEntities[1]
+                            var secondEntityName = response['dataResult']['entities'][secondentityTypeID]
+                            headerCell1.innerHTML = "<pre>" + entityTypeNameID + " - " + entityName + " - " + secondEntityName + " : " + displayName + "</pre>";
+                        }
+                        else if (splitEntities.length > 1) {
+                            var dummyKey = splitEntities.shift()
+                            var secondEntityString = splitEntities.join(", ");
+                            headerCell1.innerHTML = "<pre>" + entityTypeNameID + " - " + entityName + " - " + secondEntityString + " : " + displayName + "</pre>";
+                        }
+                        else {
+                            headerCell1.innerHTML = "<pre>" + entityTypeNameID + " - " + entityName + " : " + displayName + "</pre>";
+                        }
+                    }
+                    tblRow.appendChild(headerCell1);
+                    var headerCell2 = document.createElement("TH");
+                    headerCell2.innerHTML = "";
+                    tblRow.appendChild(headerCell2);
+
+                    tblRow = table.insertRow(-1)
+
+                    var headerCell3 = document.createElement("TH");
+                    headerCell3.innerHTML = "<pre>Time</pre>"
+                    tblRow.appendChild(headerCell3);
+                    var headerCell4 = document.createElement("TH");
+                    headerCell4.innerHTML = "<pre>" + unit + "</pre>";
+                    tblRow.appendChild(headerCell4);
+
+
+                    for (i in apiResponse[entity]) {
+                        tblRow = table.insertRow(-1)
+
+                        var dateTimeUTC = new Date(apiResponse[entity][i][0]);
+                        var localDateTime = dateTimeUTC.toLocaleString();
+
+                        var cell1 = tblRow.insertCell(-1);
+                        cell1.innerHTML = "<center><pre>" + localDateTime + "</pre></center>"
+
+                        var cell2 = tblRow.insertCell(-1);
+                        if (apiResponse[entity][i][1] != null) {
+                            cell2.setAttribute("data-type","Number");
+                            cell2.setAttribute("data-value",apiResponse[entity][i][1]);
+                            cell2.innerHTML = "<pre>" + apiResponse[entity][i][1] + "</pre>"
+                        }
+                        else {
+                            cell2.setAttribute("data-type","String");
+                            cell2.setAttribute("data-value","null");
+                            cell2.innerHTML = "<pre>" + "null" + "</pre>"
+                        }
+                    }
+                    tblRow = table.insertRow(-1)
+                    var cell1 = tblRow.insertCell(-1);
+                    cell1.innerHTML = " "
+                    var cell2 = tblRow.insertCell(-1);
+                    cell2.innerHTML = " "
+                    tblRow = table.insertRow(-1)
+                }
+                //Add new HTML Table to existing tables
+                metricTableCell = metricTableRow.insertCell(-1)
+                metricTableCell.innerHTML = table.outerHTML
+
+                //build out charts with data from apiResponse
+
+                var buildCharts = document.getElementById("buildCharts")
+                if(buildCharts.checked == true){
+                    //set up new chartData DataTable for each entity
+                    var chartData = new google.visualization.DataTable();
+                    chartData.addColumn('string', 'Date');
+
+                    console.log("Entering Draw Chart Flow...")
+
+                    var entityPerChartCount = 0
+                    var totalEntityCount = 0
+                    var chartCount = 0
+
+                    for (var y = 0; y < entityKeys.length; y++) {
+
+                        var entity = entityKeys[y]
+                        splitEntities = entity.split(', ');
+                        entityTypeNameID = splitEntities[0]
+                        entityName = response['dataResult']['entities'][entityTypeNameID]
+                        entityPerChartCount++
+                        totalEntityCount++
+
+                        if (typeof aggregation !== 'undefined') {
+                            if(splitEntities.length > 1 && firstCharIsCapital(splitEntities[1])) {
+                                var secondentityTypeID = splitEntities[1]
+                                var secondEntityName = response['dataResult']['entities'][secondentityTypeID]
+                                var chartName = displayName + " : " + aggregation
+                                var chartColumnName = entityName + " - " + secondEntityName
+                            }
+                            else if (splitEntities.length > 1) {
+                                var dummyKey = splitEntities.shift();
+                                var secondEntityString = splitEntities.join(", ");
+                                var chartNumber = y + 1
+                                var chartName = displayName + " : " + aggregation
+                                var chartColumnName = entityName + " - " + secondEntityString
+                            }
+                            else {
+                                var chartNumber = y + 1
+                                var chartName = displayName + " : " + aggregation
+                                var chartColumnName = entityName
+                            }
+                        }
+                        else {
+                            if(splitEntities.length > 1 && firstCharIsCapital(splitEntities[1])) {
+                                var secondentityTypeID = splitEntities[1]
+                                var secondEntityName = response['dataResult']['entities'][secondentityTypeID]
+                                var chartNumber = y + 1
+                                var chartName = displayName
+                                var chartColumnName = entityName + " - " + secondEntityName
+                            }
+                            else if (splitEntities.length > 1) {
+                                var dummyKey = splitEntities.shift()
+                                var secondEntityString = splitEntities.join(", ");
+                                var chartNumber = y + 1
+                                var chartName = displayName
+                                var chartColumnName = entityName + " - " + secondEntityString
+                            }
+                            else {
+                                var chartNumber = y + 1
+                                var chartName = displayName
+                                var chartColumnName = entityName
+                            }
+                        }
+
+                        colIndex = chartData.addColumn('number', chartColumnName);
+                        for (i in apiResponse[entity]) {
+                            if (entityPerChartCount == 1) {
+                                var dateTimeUTC = new Date(apiResponse[entity][i][0]);
+                                var localDateTime = dateTimeUTC.toLocaleString();
+                                chartData.addRow([localDateTime,apiResponse[entity][i][1]]);
+                            }
+                            else {
+                                rowInt = parseInt(i) //make sure i is a integer (something weird with setCell method)
+                                chartData.setCell(rowInt,colIndex,apiResponse[entity][i][1]);
+                            }
+                        }
+
+                        //Text Box Value determines how many Entities to put on each chart
+                        switch (entityType){
+                        case "host":
+                            var entitiesPerChartValue = document.getElementById('hostEntitiesPerChart').value
+                            break;
+                        case "process":
+                            var entitiesPerChartValue = document.getElementById('processEntitiesPerChart').value
+                            break;
+                        case "service":
+                            var entitiesPerChartValue = document.getElementById('serviceEntitiesPerChart').value
+                            break;
+                        }
+                        if (entityPerChartCount == entitiesPerChartValue || totalEntityCount == entityKeys.length){
+                            // After data is added to chartData Data Table, build new div to place chart
+                            // then drawChart
+                            chartCount++ // used to name each chart invidually
+                            chartName = chartName + " - "+chartCount
+                            reportDiv = document.getElementById("dataChart")
+                            reportDiv.innerHTML = reportDiv.innerHTML + "<div id=\"" + chartName + "\"></div>"
+                            console.log("Entering Draw Chart...")
+                            chartURI = drawChart(chartName,chartData);
+
+                            //Add download Link below Chart
+                            console.log("Adding Chart Link...")
+                            var newChart = document.getElementById(chartName)
+                            var data = chartURI.replace(/^data:image\/\w+;base64,/, "");
+                            var downloadLink = "data:application/octet-stream;base64," + data
+
+                            downloadLinkHTML = document.createElement('a');
+                            downloadLinkHTML.setAttribute("href",downloadLink)
+                            downloadLinkHTML.setAttribute("download",chartName+".png")
+                            downloadLinkHTML.setAttribute("style","color: white;")
+                            downloadLinkHTML.setAttribute("class","chartDownloadLink")
+                            downloadLinkHTML.innerHTML = "<center>Download Link</center>"
+                            newChart.appendChild(downloadLinkHTML)
+
+                            //start with next batch of entities
+                            var chartData = new google.visualization.DataTable();
+                            chartData.addColumn('string', 'date');
+                            entityPerChartCount = 0
+                        }
+                    }
+                }
+            });
+
+            request.fail(function (response, textStatus) {
+                metricTableCell = metricTableRow.insertCell(-1)
+                metricTableCell.innerHTML = "<p><pre>Request Failed: " + textStatus + "</pre></p>"
+
+            });
+            entityKeys = []
+        }
+
+        //Create Report Info Table w/ Start/End Times & Links
+        function createReportInfo (dynatraceURL,localDateTimeStart,startTimeUTC,localDateTimeEnd,endTimeUTC) {
+
+            var htmlReportInfoText = ""
+
+            htmlReportInfoText += "<H3> Report Information </H3>"
+            document.getElementById("reportTimingInfo").innerHTML = htmlReportInfoText;
+
+            var table = document.createElement("table")
+            table.id = "reportInfoTable"
+            var tblRow = table.insertRow(-1)
+
+            var cell1 = tblRow.insertCell(-1);
+            cell1.innerHTML = "<pre>Start Time    :</pre>"
+            var cell2 = tblRow.insertCell(-1);
+            cell2.innerHTML = "<center><pre>" + localDateTimeStart + "</pre></center>"
+            tblRow = table.insertRow(-1)
+            var cell3 = tblRow.insertCell(-1);
+            cell3.innerHTML = "<pre>End Time    :</pre>"
+            var cell4 = tblRow.insertCell(-1);
+            cell4.innerHTML = "<center><pre>" + localDateTimeEnd + "</pre></center>"
+            tblRow = table.insertRow(-1)
+            tblRow = table.insertRow(-1)
+
+
+            let allEntityIDNameArrSet = new Set(allEntityIDNameArr.map(JSON.stringify));
+            let allEntityIDNameArrUnique = Array.from(allEntityIDNameArrSet).map(JSON.parse);
+
+            for (i in allEntityIDNameArrUnique) {
+                var entityID = allEntityIDNameArrUnique[i][0]
+                var entityName = allEntityIDNameArrUnique[i][1]
+
+                if(entityID.startsWith("HOST-")) {
+                    var cell1 = tblRow.insertCell(-1);
+                    cell1.innerHTML = "<pre>" + entityName + "</pre>"
+                    var cell2 = tblRow.insertCell(-1);
+                    cell2.innerHTML = ""
+                    tblRow = table.insertRow(-1)
+                    var cell3 = tblRow.insertCell(-1);
+                    cell3.innerHTML = "<pre>Dynatrace Host Page</pre>"
+                    var cell4 = tblRow.insertCell(-1);
+                    var dtHostURL = dynatraceURL + "/#newhosts/hostdetails;id=" + entityID + ";gtf=c_" + startTimeUTC + "_" +endTimeUTC+ ";gf=all"
+                    cell4.innerHTML = "<pre><a href='"+dtHostURL+"' style='color: white;'>"+dtHostURL+"</a></pre>"
+                    tblRow = table.insertRow(-1)
+                    tblRow = table.insertRow(-1)
+                }
+                else if (entityID.startsWith("PROCESS_GROUP_INSTANCE-")){
+                    var cell1 = tblRow.insertCell(-1);
+                    cell1.innerHTML = "<pre>" + entityName + "</pre>"
+                    var cell2 = tblRow.insertCell(-1);
+                    cell2.innerHTML = ""
+                    tblRow = table.insertRow(-1)
+
+                    var cell3 = tblRow.insertCell(-1);
+                    cell3.innerHTML = "<pre>Dynatrace Process Page</pre>"
+                    var cell4 = tblRow.insertCell(-1);
+                    var dtProcessURL = dynatraceURL + "/#processdetails;id=" + entityID + ";gtf=c_" + startTimeUTC + "_" +endTimeUTC+ ";gf=all"
+                    cell4.innerHTML = "<pre><a href='"+ dtProcessURL+"' style='color: white;'>"+dtProcessURL+"</a></pre>"
+                    tblRow = table.insertRow(-1)
+                    tblRow = table.insertRow(-1)
+                }
+                else if (entityID.startsWith("SERVICE-")){
+                    var cell1 = tblRow.insertCell(-1);
+                    cell1.innerHTML = "<pre>" + entityName + "</pre>"
+                    var cell2 = tblRow.insertCell(-1);
+                    cell2.innerHTML = ""
+                    tblRow = table.insertRow(-1)
+
+                    var cell3 = tblRow.insertCell(-1);
+                    cell3.innerHTML = "<pre>Dynatrace Service Page</pre>"
+                    var cell4 = tblRow.insertCell(-1);
+                    var dtServiceURL = dynatraceURL + "/#newservices/serviceOverview;id=" + entityID + ";gtf=c_" + startTimeUTC + "_" +endTimeUTC+ ";gf=all"
+                    cell4.innerHTML = "<pre><a href='"+dtServiceURL+"' style='color: white;'>"+dtServiceURL+"</a></pre>"
+                    tblRow = table.insertRow(-1)
+                    var cell5 = tblRow.insertCell(-1);
+                    cell5.innerHTML = "<pre>Dynatrace Service PurePaths</pre>"
+                    var cell6 = tblRow.insertCell(-1);
+                    var dtPurePathURL = dynatraceURL + "/#servicecalls;sci=" + entityID + ";timeframe=custom" + startTimeUTC + "to" +endTimeUTC+ ";gf=all"
+                    cell6.innerHTML = "<pre><a href='"+dtPurePathURL+"' style='color: white;'>"+dtPurePathURL+"</a></pre>"
+                    tblRow = table.insertRow(-1)
+                    var cell7 = tblRow.insertCell(-1);
+                    cell7.innerHTML = "<pre>Dynatrace Service Exceptions</pre>"
+                    var cell8 = tblRow.insertCell(-1);
+                    var dtExceptionsURL = dynatraceURL + "/#exceptionsoverview;sci=" + entityID + ";gtf=c_" + startTimeUTC + "_" +endTimeUTC+ ";gf=all"
+                    cell8.innerHTML = "<pre><a href='"+dtExceptionsURL+"' style='color: white;'>"+dtExceptionsURL+"</a></pre>"
+                    tblRow = table.insertRow(-1)
+                    tblRow = table.insertRow(-1)
+                }
+                else { /*DO NOTHING*/ }
+            }
+
+        document.getElementById("reportTimingInfo").appendChild(table);
+        }
+
+        //From all Tables created build out Excel Button
+        function createExcelButton (collectHostMetrics,fullHostMetricsList,collectProcessMetrics,fullProcessMetricsList,collectServiceMetrics, fullServiceMetricsList) {
+
+            //format metric list correctly for excel download
+
+            var downloadButtonHTML = ""
+
+            if(collectHostMetrics == true) {
+                var hostMetricsListTrimmed = []
+                var collectedHostMetricsList = []
+                var hostMetricCount = 0
+
+                for (metric in fullHostMetricsList){
+                    metricTableName = fullHostMetricsList[metric]
+                    var table = document.getElementById(metricTableName);
+                    var rows = table.getElementsByTagName("tr")
+                    if (rows.length > 1) {
+                        collectedHostMetricsList.push(metricTableName)
+                        hostMetricCount ++;
+                    }
+                }
+
+                if (hostMetricCount >= 1) {
+                    for (metric in collectedHostMetricsList) {
+                        var metricName = collectedHostMetricsList[metric]
+                        var splitMetricName = metricName.split(":");
+                        hostMetricsListTrimmed.push(splitMetricName[1]);
+                    }
+                }
+            }
+
+
+            if(collectProcessMetrics == true) {
+                var processMetricsListTrimmed = []
+                var collectedProcessMetricsList = []
+                var processMetricCount = 0
+
+                for (metric in fullProcessMetricsList){
+                    metricTableName = fullProcessMetricsList[metric]
+                    var table = document.getElementById(metricTableName);
+                    var rows = table.getElementsByTagName("tr")
+                    if (rows.length > 1) {
+                        collectedProcessMetricsList.push(metricTableName)
+                        processMetricCount ++;
+                    }
+                }
+                if (processMetricCount >= 1) {
+                    for (metric in collectedProcessMetricsList) {
+                        var metricName = collectedProcessMetricsList[metric]
+                        var splitMetricName = metricName.split(":");
+                        processMetricsListTrimmed.push(splitMetricName[1]);
+                    }
+                }
+            }
+
+            if(collectServiceMetrics == true) {
+                var serviceMetricsListTrimmed = []
+                var collectedServiceMetricsList = []
+                var serviceMetricCount = 0
+
+                for (metric in fullServiceMetricsList){
+                    metricTableName = fullServiceMetricsList[metric]
+                    var table = document.getElementById(metricTableName);
+                    var rows = table.getElementsByTagName("tr")
+                    if (rows.length > 1) {
+                        collectedServiceMetricsList.push(metricTableName)
+                        serviceMetricCount ++;
+                    }
+                }
+                if (serviceMetricCount >= 1) {
+                    for (metric in collectedServiceMetricsList) {
+                        var metricName = collectedServiceMetricsList[metric]
+                        var splitMetricName = metricName.split(":");
+                        serviceMetricsListTrimmed.push(splitMetricName[1]);
+                    }
+                }
+            }
+
+            if (collectHostMetrics== true && collectProcessMetrics == true && collectServiceMetrics == true){
+                dynatraceMetricNameString = hostMetricsListTrimmed.join("','") + "','" + processMetricsListTrimmed.join("','")+ "','" + serviceMetricsListTrimmed.join("','");
+                dynatraceMetricTableString = collectedHostMetricsList.join("','") + "','" + collectedProcessMetricsList.join("','")+ "','" + collectedServiceMetricsList.join("','");
+                downloadButtonHTML += "<button onclick=\"tables2Excel(['reportInfoTable','"+dynatraceMetricTableString+"'],['Report_Info','"+dynatraceMetricNameString+"'])\">Download Raw Data to Excel</button>"
+            }
+            else if (collectHostMetrics== true && collectProcessMetrics == true && collectServiceMetrics == false){
+                dynatraceMetricNameString = hostMetricsListTrimmed.join("','") + "','" + processMetricsListTrimmed.join("','");
+                dynatraceMetricTableString = collectedHostMetricsList.join("','") + "','" + collectedProcessMetricsList.join("','");
+                downloadButtonHTML += "<button onclick=\"tables2Excel(['reportInfoTable','"+dynatraceMetricTableString+"'],['Report_Info','"+dynatraceMetricNameString+"'])\">Download Raw Data to Excel</button>"
+            }
+            else if (collectHostMetrics== true && collectProcessMetrics == false && collectServiceMetrics == true){
+                dynatraceMetricNameString = hostMetricsListTrimmed.join("','") + "','" + serviceMetricsListTrimmed.join("','");
+                dynatraceMetricTableString = collectedHostMetricsList.join("','") + "','" + collectedServiceMetricsList.join("','");
+                downloadButtonHTML += "<button onclick=\"tables2Excel(['reportInfoTable','"+dynatraceMetricTableString+"'],['Report_Info','"+dynatraceMetricNameString+"'])\">Download Raw Data to Excel</button>"
+            }
+            else if (collectHostMetrics== true && collectProcessMetrics == false && collectServiceMetrics == false) {
+                dynatraceMetricNameString = hostMetricsListTrimmed.join("','")
+                dynatraceMetricTableString = collectedHostMetricsList.join("','")
+                downloadButtonHTML += "<button onclick=\"tables2Excel(['reportInfoTable','"+dynatraceMetricTableString+"'],['Report_Info','"+dynatraceMetricNameString+"'])\">Download Raw Data to Excel</button>"
+            }
+            else if (collectHostMetrics== false && collectProcessMetrics == true && collectServiceMetrics == false) {
+                dynatraceMetricNameString = processMetricsListTrimmed.join("','");
+                dynatraceMetricTableString = collectedProcessMetricsList.join("','");
+                downloadButtonHTML += "<button onclick=\"tables2Excel(['reportInfoTable','"+dynatraceMetricTableString+"'],['Report_Info','"+dynatraceMetricNameString+"'])\">Download Raw Data to Excel</button>"
+            }
+            else if (collectHostMetrics== false && collectProcessMetrics == false && collectServiceMetrics == true) {
+                dynatraceMetricNameString = serviceMetricsListTrimmed.join("','");
+                dynatraceMetricTableString = collectedServiceMetricsList.join("','");
+                downloadButtonHTML += "<button onclick=\"tables2Excel(['reportInfoTable','"+dynatraceMetricTableString+"'],['Report_Info','"+dynatraceMetricNameString+"'])\">Download Raw Data to Excel</button>"
+            }
+            else if (collectHostMetrics== false && collectProcessMetrics == true && collectServiceMetrics == true) {
+                dynatraceMetricNameString = processMetricsListTrimmed.join("','") + "','" + serviceMetricsListTrimmed.join("','");
+                dynatraceMetricTableString = collectedProcessMetricsList.join("','") + "','" + collectedServiceMetricsList.join("','");
+                downloadButtonHTML += "<button onclick=\"tables2Excel(['reportInfoTable','"+dynatraceMetricTableString+"'],['Report_Info','"+dynatraceMetricNameString+"'])\">Download Raw Data to Excel</button>"
+            }
+            document.getElementById("downloadButton").innerHTML = downloadButtonHTML;
+        }
+
+        function firstCharIsCapital (word) {
+            return word[0] !== word[0].toLowerCase();
+        }
+    });
 </script>

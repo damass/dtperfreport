@@ -236,13 +236,13 @@
                     <td><pre>Use ctrl key to select multiple Aggregations. Min, Avg, Max Selected by Default.</pre></td>
                 </tr>
                 <tr>
-                    <td><pre>Host Tag(s)                : <input type="text" id="hostTag"></pre></td>
+                    <td><pre>Host Tag(s)                : <input type="text" id="hostTag" size=150></pre></td>
                 </tr>
                 <tr>
-                    <td><pre>Host ID(s)                 : <input type="text" id="hostID"></pre></td>
+                    <td><pre>Host ID(s)                 : <input type="text" id="hostID" size=150></pre></td>
                 </tr>
                 <tr>
-                    <td><pre>Host Management Zone(s)    : <input type="text" id="hostMgmtZoneName"></pre></td>
+                    <td><pre>Host Management Zone(s)    : <input type="text" id="hostMgmtZoneName" size=150></pre></td>
                 </tr>
             <table id="hostMetricList">
                 <tr>
@@ -276,13 +276,13 @@
                     <td><pre>Use ctrl key to select multiple Aggregations. Min, Avg, Max Selected by Default.</pre></td>
                 </tr>
                 <tr>
-                    <td><pre>Process Tag(s)                     : <input type="text" id="processTag"></pre></td>
+                    <td><pre>Process Tag(s)                     : <input type="text" id="processTag" size=150></pre></td>
                 </tr>
                 <tr>
-                    <td><pre>Process Group Instance ID(s)       : <input type="text" id="processID"></pre></td>
+                    <td><pre>Process Group Instance ID(s)       : <input type="text" id="processID" size=150></pre></td>
                 </tr>
                 <tr>
-                    <td><pre>Process Management Zone(s)         : <input type="text" id="processMgmtZoneName"></pre></td>
+                    <td><pre>Process Management Zone(s)         : <input type="text" id="processMgmtZoneName" size=150></pre></td>
                 </tr>
             </table>
             <table id="processMetricList">
@@ -311,13 +311,13 @@
                     <td><pre>Use ctrl key to select multiple Aggregations. Min, Avg, Max Selected by Default.</pre></td>
                 </tr>
                 <tr>
-                    <td><pre>Service Tag(s)                : <input type="text" id="serviceTag"></pre></td>
+                    <td><pre>Service Tag(s)                : <input type="text" id="serviceTag" size=150></pre></td>
                 </tr>
                 <tr>
-                    <td><pre>Service ID(s)                 : <input type="text" id="serviceID"></pre></td>
+                    <td><pre>Service ID(s)                 : <input type="text" id="serviceID" size=150></pre></td>
                 </tr>
                 <tr>
-                    <td><pre>Service Management Zone(s)    : <input type="text" id="serviceMgmtZoneName"></pre></td>
+                    <td><pre>Service Management Zone(s)    : <input type="text" id="serviceMgmtZoneName" size=150></pre></td>
                 </tr>
             </table>
             <hr>
@@ -595,7 +595,7 @@
                 normTimeSection.setAttribute("class","hide");
                 if(relTimeInput.val().startsWith("now-")) {
                     relTimeParts = relTimeInput.val().split("-")
-                    layout = relTimeParts[1].match(/\d+[mhdwMy]+/g);
+                    layout = relTimeParts[1].match(/\d+[mhdwMy]/g);
                     if(layout){
                         relTimeInput.removeClass("invalid").addClass("valid")
                         validTime = true
@@ -619,7 +619,7 @@
                 dataResolutionInput.removeClass("invalid").removeClass("valid");
             }
             else {
-                layout = dataResolutionInput.val().match(/\d+[mhdwMy]+/g);
+                layout = dataResolutionInput.val().match(/\d+[mhdwMy]/g);
                 if(layout){
                     dataResolutionInput.removeClass("invalid").addClass("valid");
                     validDataResolution = true;
@@ -1150,11 +1150,11 @@
                 }
 
                 if (dataResolution != "" && validDataResolution) {
-                    dtURL += "&resolution=" + dataResolution
+                    dtURL += "&resolution=" + dataResolution.trim()
                 }
 
                 if (useRelativeTime){
-                    dtURL += "&from=" + relativeTime
+                    dtURL += "&from=" + relativeTime.trim()
                 }
                 else {
                     dtURL += "&from=" + startTime + "&to=" + endTime
@@ -1166,7 +1166,7 @@
                     entityTypeIDList = entityTypeID.split(",")
                     var entityIDString = 'entityId('
                     for(var id=0; id<entityTypeIDList.length; id++){
-                        entityIDString += '"' + entityTypeIDList[id] + '",'
+                        entityIDString += '"' + entityTypeIDList[id].trim() + '",'
                     }
                     finalEntityIDString = entityIDString.slice(0,-1)
                     finalEntityIDString += ')'
@@ -1176,7 +1176,7 @@
                     entityTypeTagList = entityTypeTag.split(",")
                     var entityTagString = 'tag('
                     for(var tag=0; tag<entityTypeTagList.length; tag++){
-                        entityTagString += '"' + entityTypeTagList[tag] + '",'
+                        entityTagString += '"' + entityTypeTagList[tag].trim() + '",'
                     }
                     finalEntityTagString = entityTagString.slice(0,-1)
                     finalEntityTagString += ')'
@@ -1191,7 +1191,7 @@
                     entityTypeMZNameList = entityTypeMZName.split(",")
                     var entityMZNameString = 'mzName('
                     for(var mzName = 0; mzName < entityTypeMZNameList.length; mzName++){
-                        entityMZNameString += '"' + entityTypeMZNameList[mzName] + '",'
+                        entityMZNameString += '"' + entityTypeMZNameList[mzName].trim() + '",'
                     }
                     finalEntityMZNameString = entityMZNameString.slice(0,-1)
                     finalEntityMZNameString += ')'

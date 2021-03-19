@@ -318,7 +318,11 @@
                     <td><pre>Service Management Zone(s)    : <input type="text" id="serviceMgmtZoneName"></pre></td>
                 </tr>
             </table>
+            <hr>
             <table id="serviceMetricList">
+                <tr>
+                    <td colspan=3 ><pre><h4>Out of the Box Service Metrics</h4></pre></td>
+                </tr>
                 <tr>
                     <td><pre><input type="checkbox" checked="true" value="builtin:service.response.time"><label>Response Time</label></pre></td><td><pre><select id="builtin:service.response.timeAgg" multiple="true" size="5"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option><option value="MEDIAN">Median</option></select></pre></td>
                     <td><pre><input type="checkbox" checked="true" value="builtin:service.requestCount.total"><label>Number of Requests</label></pre></td>
@@ -326,6 +330,15 @@
                 <tr>
                     <td><pre><input type="checkbox" value="builtin:service.errors.fourxx.count"><label>Number of HTTP 4xx</label></pre></td><td><pre></pre></td>
                     <td><pre><input type="checkbox" value="builtin:service.errors.fivexx.count"><label>Number of HTTP 5xx</label></pre></td><td><pre></pre></td>
+                </tr>
+                <tr>
+                    <td colspan=3 ><hr></td>
+                </tr>
+                <tr>
+                    <td colspan=3 ><pre><h4>Calculated Service Metrics (Please Customize to fit your environment)</h4></pre></td>
+                </tr>
+                <tr>
+                    <td><pre><input type="checkbox" checked="true" value="calc:service.requestcountunder1second"><label>Request Count Under 1 Second</label></pre></td><td><pre><select id="calc:service.requestcountunder1secondAgg" multiple="true" size="5"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option><option value="COUNT">COUNT</option></select></pre></td>
                 </tr>
             </table>
             <hr>
@@ -1159,11 +1172,11 @@
                 dvTable.appendChild(mainMetricTable);
 
                 console.log("Gathering data for metric ID : " + dynatraceMetricID);
-                gatherMetricsRequest(entityType,dtURL,token,dynatraceMetricID,mainMetricTable, useAggregation);
+                gatherMetricsRequest(entityType,dtURL,token,dynatraceMetricID,mainMetricTable, useAggregation,startTime,endTime,useRelativeTime,relativeTime);
             }
         }
 
-        function gatherMetricsRequest(entityType,fullDTURL,token,dynatraceMetricID,mainMetricTable, useAggregation) {
+        function gatherMetricsRequest(entityType,fullDTURL,token,dynatraceMetricID,mainMetricTable, useAggregation,startTime,endTime,useRelativeTime,relativeTime) {
             var entityKeys = []
             var settings = {
                 "async": false,
@@ -1200,9 +1213,22 @@
                     data = aggregationResponses[x]['data']
                     for (var dataIndex = 0; dataIndex < data.length; dataIndex++) {
                         completeEntityID = ""
-                        dimensions = data[dataIndex]['dimensions'];
-                        for (var dimIndex = 0; dimIndex < dimensions.length; dimIndex++) {
-                            completeEntityID += dimensions[dimIndex] + "-"
+                        dimensionMap = data[dataIndex]['dimensionMap'];
+                        dimensionKeys = Object.keys(dimensionMap)
+                        for (var dimIndex = 0; dimIndex < dimensionKeys.length; dimIndex++) {
+                            if(dimensionKeys[dimIndex].startsWith("dt.entity")){
+                                entityName = findDTEntityName(dimensionMap[dimensionKeys[dimIndex]],startTime,endTime,useRelativeTime,relativeTime)
+                                console.log("Received Entity Name : " + entityName)
+                                completeEntityID = entityName + " - " + completeEntityID
+                                if (dimensionMap[dimensionKeys[dimIndex]].startsWith("HOST") ||
+                                    dimensionMap[dimensionKeys[dimIndex]].startsWith("SERVICE") ||
+                                    dimensionMap[dimensionKeys[dimIndex]].startsWith("PROCESS_GROUP_INSTANCE")) {
+                                        completeEntityID = dimensionMap[dimensionKeys[dimIndex]] + " - " + completeEntityID
+                                    }
+                            }
+                            else if (dimensionKeys[dimIndex] != "rx_pid") {
+                                completeEntityID += dimensionMap[dimensionKeys[dimIndex]] + " - "
+                            }
                         }
 
                         completeEntityID = completeEntityID.slice(0,-1)
@@ -1268,6 +1294,43 @@
 
             });
             entityKeys = []
+        }
+
+        function findDTEntityName (entityID,startTime,endTime,useRelativeTime,relativeTime) {
+            name = entityID;
+            var inputURLValue=$('#dynatraceURL').val();
+            var inputTokenValue=$('#dynatraceToken').val();
+
+            dtEntityURL = inputURLValue + "/api/v2/entities/" + entityID
+            if (useRelativeTime){
+                dtEntityURL += "?from=" + relativeTime
+            }
+            else {
+                dtEntityURL += "?from=" + startTime + "&to=" + endTime
+            }
+
+            var settings = {
+                "async": false,
+                "crossDomain": true,
+                "url": dtEntityURL,
+                "method": "GET",
+                "headers": {
+                    "Authorization": "Api-Token " + inputTokenValue,
+                    "Content-Type": "application/json",
+                },
+                "processData": false,
+                "data": ""
+                }
+
+            var request = $.ajax(settings);
+            request.done(function (response) {
+                name = response['displayName']
+            });
+
+            request.fail(function (response, textStatus) {
+                console.log("Request to find Entity Name Failed")
+            });
+            return name;
         }
 
         //Create Report Info Table w/ Start/End Times & Links

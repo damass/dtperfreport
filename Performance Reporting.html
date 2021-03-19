@@ -23,12 +23,14 @@
         }
 
         #normalTimeSection.hide, #relativeTimeSection.hide, #loadingSection.hide, #mainSection.hide, #hostMetricsLabel.hide, #processMetricsLabel.hide, #serviceMetricsLabel.hide,
-        #hostMetricsSection.hide, #processMetricsSection.hide, #serviceMetricsSection.hide, #timeSection.hide, #reportSection.hide, #chartButton.hide, #tableButton.hide, #dataTable.hide, #dataChart.hide, #downloadAllButtonCell.hide, #chartOptions.hide {
+        #hostMetricsSection.hide, #processMetricsSection.hide, #serviceMetricsSection.hide, #timeSection.hide, #reportSection.hide, #chartButton.hide, #tableButton.hide,
+        #dataTable.hide, #dataChart.hide, #downloadAllButtonCell.hide, #chartOptions.hide, #buildChartsChkBox.hide {
             display: none;
         }
 
         #normalTimeSection.show, #relativeTimeSection.show, #loadingSection.show, #mainSection.show, #hostMetricsLabel.show, #processMetricsLabel.show, #serviceMetricsLabel.show,
-        #hostMetricsSection.show, #processMetricsSection.show, #serviceMetricsSection.show, #timeSection.show, #reportSection.show, #chartButton.show, #tableButton.show, #dataTable.show, #dataChart.show, #downloadAllButtonCell.show, #chartOptions.show {
+        #hostMetricsSection.show, #processMetricsSection.show, #serviceMetricsSection.show, #timeSection.show, #reportSection.show, #chartButton.show, #tableButton.show,
+        #dataTable.show, #dataChart.show, #downloadAllButtonCell.show, #chartOptions.show, #buildChartsChkBox.show {
             display: block;
         }
     </style>
@@ -407,7 +409,7 @@
                     <td><pre><a href="https://www.dynatrace.com/support/help/shortlink/api-metrics-v2-get-datapoints#parameters" >"resolution" docs</a></pre></td>
                 </tr>
             </table>
-            <table>
+            <table id="buildChartsChkBox" class="hide">
                 <tr>
                     <td><pre><input type="checkbox" id="buildCharts"><label>Build Charts?</label></pre></td>
                 </tr>

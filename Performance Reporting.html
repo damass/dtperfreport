@@ -1224,6 +1224,8 @@
                                     dimensionMap[dimensionKeys[dimIndex]].startsWith("SERVICE") ||
                                     dimensionMap[dimensionKeys[dimIndex]].startsWith("PROCESS_GROUP_INSTANCE")) {
                                         completeEntityID = dimensionMap[dimensionKeys[dimIndex]] + " - " + completeEntityID
+                                        key = dimensionMap[dimensionKeys[dimIndex]]
+                                        allEntityIDNameArr.push([key, entityName])
                                     }
                             }
                             else if (dimensionKeys[dimIndex] != "rx_pid") {

@@ -1218,7 +1218,6 @@
                         for (var dimIndex = 0; dimIndex < dimensionKeys.length; dimIndex++) {
                             if(dimensionKeys[dimIndex].startsWith("dt.entity")){
                                 entityName = findDTEntityName(dimensionMap[dimensionKeys[dimIndex]],startTime,endTime,useRelativeTime,relativeTime)
-                                console.log("Received Entity Name : " + entityName)
                                 completeEntityID = entityName + " - " + completeEntityID
                                 if (dimensionMap[dimensionKeys[dimIndex]].startsWith("HOST") ||
                                     dimensionMap[dimensionKeys[dimIndex]].startsWith("SERVICE") ||

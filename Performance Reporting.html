@@ -475,7 +475,8 @@
         validEntitiesPerChart = true
 
         var validTime = true
-        var useRelativeTime = true
+        var useRelativeTime = false
+        var validDataResolution = false
         var allEntityIDNameArr = [] //used to capture all Entity ID & Names to create URLs for Report Info Section
 
         $('#buildCharts').on('click', function() {
@@ -508,6 +509,7 @@
                 processMetricsLabel.setAttribute("class","hide");
                 serviceMetricsLabel.setAttribute("class","hide");
                 collectHostMetrics = true
+                $('#relativeTime').click(); // auto validate relativeTime
             }
             else {
                 collectHostMetrics = false
@@ -537,6 +539,7 @@
                 processMetricsLabel.setAttribute("class","hide");
                 serviceMetricsLabel.setAttribute("class","hide");
                 collectProcessMetrics = true
+                $('#relativeTime').click(); // auto validate relativeTime
             }
             else {
                 collectProcessMetrics = false
@@ -565,6 +568,7 @@
                 processMetricsLabel.setAttribute("class","hide");
                 serviceMetricsLabel.setAttribute("class","hide");
                 collectServiceMetrics = true
+                $('#relativeTime').click(); // auto validate relativeTime
             }
             else {
                 collectServiceMetrics = false
@@ -577,8 +581,7 @@
 
         });
         // End Show Metric Type Section
-
-        $('#relativeTime').on('input', function(){
+        $('#relativeTime').on('input click', function(){
             var relTimeSection = document.getElementById("relativeTimeSection");
             var normTimeSection = document.getElementById("normalTimeSection");
             var relTimeInput=$(this);
@@ -586,11 +589,45 @@
                 normTimeSection.setAttribute("class","show");
                 validTime = false
                 useRelativeTime = false
+                relTimeInput.removeClass("invalid").removeClass("valid")
             }
             else {
                 normTimeSection.setAttribute("class","hide");
-                validTime = true
-                useRelativeTime = true
+                if(relTimeInput.val().startsWith("now-")) {
+                    relTimeParts = relTimeInput.val().split("-")
+                    layout = relTimeParts[1].match(/\d+[mhdwMy]+/g);
+                    if(layout){
+                        relTimeInput.removeClass("invalid").addClass("valid")
+                        validTime = true
+                        useRelativeTime = true
+                    }
+                    else {
+                        relTimeInput.removeClass("valid").addClass("invalid")
+                        validTime = false
+                        useRelativeTime = false
+                    }
+                }
+                else{
+                    relTimeInput.removeClass("valid").addClass("invalid")
+                }
+            }
+        });
+
+        $('#dataResolution').on('input click', function(){
+            var dataResolutionInput =$(this);
+            if (dataResolutionInput.val() == "") {
+                dataResolutionInput.removeClass("invalid").removeClass("valid");
+            }
+            else {
+                layout = dataResolutionInput.val().match(/\d+[mhdwMy]+/g);
+                if(layout){
+                    dataResolutionInput.removeClass("invalid").addClass("valid");
+                    validDataResolution = true;
+                }
+                else {
+                    dataResolutionInput.removeClass("valid").addClass("invalid");
+                    validDataResolution = false;
+                }
             }
         });
 
@@ -948,19 +985,19 @@
                     if (collectHostMetrics == true) {
                         hostMetricsList = findMetrics("host");
                         //hostMetricsLabel.setAttribute("class","show");
-                        collectDataAndBuildCharts("host",inputURLValue,inputTokenValue,inputHostIDValue,inputHostTagValue,inputHostMZNameValue,startTimeUTC,endTimeUTC,hostMetricsList,dataResolution, useRelativeTime, relativeTime)
+                        collectDataAndBuildCharts("host",inputURLValue,inputTokenValue,inputHostIDValue,inputHostTagValue,inputHostMZNameValue,startTimeUTC,endTimeUTC,hostMetricsList,dataResolution, useRelativeTime, relativeTime, validDataResolution)
                     }
 
                     if (collectProcessMetrics == true) {
                         processMetricsList = findMetrics("process");
                         //processMetricsLabel.setAttribute("class","show");
-                        collectDataAndBuildCharts("process",inputURLValue,inputTokenValue,inputProcessIDValue,inputProcessTagValue,inputProcessMZNameValue,startTimeUTC,endTimeUTC,processMetricsList,dataResolution, useRelativeTime, relativeTime)
+                        collectDataAndBuildCharts("process",inputURLValue,inputTokenValue,inputProcessIDValue,inputProcessTagValue,inputProcessMZNameValue,startTimeUTC,endTimeUTC,processMetricsList,dataResolution, useRelativeTime, relativeTime, validDataResolution)
                     }
 
                     if (collectServiceMetrics == true) {
                         serviceMetricsList = findMetrics("service");
                         //serviceMetricsLabel.setAttribute("class","show");
-                        collectDataAndBuildCharts("service",inputURLValue,inputTokenValue,inputServiceIDValue,inputServiceTagValue, inputServiceMZNameValue,startTimeUTC,endTimeUTC,serviceMetricsList,dataResolution, useRelativeTime, relativeTime)
+                        collectDataAndBuildCharts("service",inputURLValue,inputTokenValue,inputServiceIDValue,inputServiceTagValue, inputServiceMZNameValue,startTimeUTC,endTimeUTC,serviceMetricsList,dataResolution, useRelativeTime, relativeTime, validDataResolution)
                     }
 
                     createReportInfo(inputURLValue,localDateTimeStart,startTimeUTC,localDateTimeEnd,endTimeUTC, useRelativeTime, relativeTime)
@@ -1076,7 +1113,7 @@
         }
 
         //Gather Metrics & Build out HTML tables for different Entity Types
-        function collectDataAndBuildCharts(entityType,dynatraceURL,token,entityTypeID,entityTypeTag,entityTypeMZName,startTime,endTime,entityTypeMetricsList,dataResolution, useRelativeTime, relativeTime) {
+        function collectDataAndBuildCharts(entityType,dynatraceURL,token,entityTypeID,entityTypeTag,entityTypeMZName,startTime,endTime,entityTypeMetricsList,dataResolution, useRelativeTime, relativeTime, validDataResolution) {
             console.log("Gathering " + entityType + " metrics ...")
 
             entityTypeMetricID = entityType + "Metrics"
@@ -1112,7 +1149,7 @@
                         break;
                 }
 
-                if (dataResolution != "") {
+                if (dataResolution != "" && validDataResolution) {
                     dtURL += "&resolution=" + dataResolution
                 }
 

@@ -71,10 +71,14 @@
                     }
                     else {
                         switch (fullMetricTableNames[table]) {
-                            case "com.dynatrace.builtin:service.errorcounthttp4xx":
-                            case "com.dynatrace.builtin:service.errorcounthttp5xx":
+                            case "builtin:tech.generic.cpu.suspensionTime":
+                            case "builtin:tech.jvm.memory.pool.collectionCount":
+                            case "builtin:tech.jvm.memory.pool.collectionTime":
+                            case "builtin:service.requestCount.total":
+                            case "builtin:service.errors.fourxx.count":
+                            case "builtin:service.errors.fivexx.count":
                                 console.log("Start Building " + fullMetricTableNames[table] + " WorkSheet...")
-                                tableObj = document.getElementById(fullMetricTableNames[table]+"-NoAgg")
+                                tableObj = document.getElementById(fullMetricTableNames[table]+":noagg")
                                 var ws = XLSX.utils.table_to_sheet(tableObj, {dateNF : 'MM/DD/YYYY HH:mm:ss'});
                                 XLSX.utils.book_append_sheet(wb, ws, worksheetNames[table]);
                                 console.log("Completed Building " + fullMetricTableNames[table] + " WorkSheet...")
@@ -230,25 +234,30 @@
                     <td><pre>Use ctrl key to select multiple Aggregations. Min, Avg, Max Selected by Default.</pre></td>
                 </tr>
                 <tr>
-                    <td><pre>Tag(s)        : <input type="text" id="hostTag"></pre></td>
+                    <td><pre>Host Tag(s)                : <input type="text" id="hostTag"></pre></td>
                 </tr>
                 <tr>
-                    <td><pre>Host ID(s)    : <input type="text" id="hostID"></pre></td>
+                    <td><pre>Host ID(s)                 : <input type="text" id="hostID"></pre></td>
+                </tr>
+                <tr>
+                    <td><pre>Host Management Zone(s)    : <input type="text" id="hostMgmtZoneName"></pre></td>
                 </tr>
             <table id="hostMetricList">
                 <tr>
-                    <td><pre><input type="checkbox" checked="true" value="builtin:host.mem.usage"><label>Host Memory Usage %</label></pre></td><td><pre><select id="builtin:host.mem.usageAgg" multiple="true" size="3"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option></select></pre></td>
+                    <td><pre><input type="checkbox" checked="true" value="builtin:host.mem.usage"><label>Host Memory Usage %</label></pre></td><td><pre><select id="builtin:host.mem.usageAgg" multiple="true" size="3"><option selected value="min">Min</option><option selected value="avg">Avg</option><option selected value="max">Max</option></select></pre></td>
                 </tr>
                 <tr>
-                    <td><pre><input type="checkbox" value="builtin:host.nic.bytesreceived"><label>Host Bytes Received / Sec</label></pre></td><td><pre><select id="builtin:host.nic.bytesreceivedAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
-                    <td><pre><input type="checkbox" value="builtin:host.nic.bytessent"><label>Host Bytes Sent / Sec</label></pre></td><td><pre><select id="builtin:host.nic.bytessentAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
+                    <td><pre><input type="checkbox" value="builtin:host.net.nic.bytesRx"><label>Host Bytes Received / Sec</label></pre></td><td><pre><select id="builtin:host.net.nic.bytesRxAgg" multiple="true" size="3"><option selected value="min">Min</option><option selected value="avg">Avg</option><option selected value="max">Max</option></select></pre></td>
+                    <td><pre><input type="checkbox" value="builtin:host.net.nic.bytesTx"><label>Host Bytes Sent / Sec</label></pre></td><td><pre><select id="builtin:host.net.nic.bytesTxAgg" multiple="true" size="3"><option selected value="min">Min</option><option selected value="avg">Avg</option><option selected value="max">Max</option></select></pre></td>
                 </tr>
                 <tr>
-                    <td><pre><input type="checkbox" checked="true" value="builtin:host.cpu.system"><label>Host CPU System %</label></pre></td><td><pre><select id="builtin:host.cpu.systemAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
-                    <td><pre><input type="checkbox" value="builtin:host.cpu.idle"><label>Host CPU Idle %</label></pre></td><td><pre><select id="builtin:host.cpu.idleAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
-                    <td><pre><input type="checkbox" value="builtin:host.cpu.iowait"><label>Host CPU I/O Wait %</label></pre></td><td><pre><select id="builtin:host.cpu.iowaitAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
-                    <td><pre><input type="checkbox" value="builtin:host.cpu.other"><label>Host CPU Other %</label></pre></td><td><pre><select id="builtin:host.cpu.otherAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
-                    <td><pre><input type="checkbox" value="builtin:host.cpu.steal"><label>Host CPU Steal %</label></pre></td><td><pre><select id="builtin:host.cpu.stealAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
+                    <td><pre><input type="checkbox" checked="true" value="builtin:host.cpu.usage"><label>Host CPU Usage %</label></pre></td><td><pre><select id="builtin:host.cpu.usageAgg" multiple="true" size="3"><option selected value="min">Min</option><option selected value="avg">Avg</option><option selected value="max">Max</option></select></pre></td>
+                    <td><pre><input type="checkbox" value="builtin:host.cpu.system"><label>Host CPU System %</label></pre></td><td><pre><select id="builtin:host.cpu.systemAgg" multiple="true" size="3"><option selected value="min">Min</option><option selected value="avg">Avg</option><option selected value="max">Max</option></select></pre></td>
+                    <td><pre><input type="checkbox" value="builtin:host.cpu.user"><label>Host CPU User %</label></pre></td><td><pre><select id="builtin:host.cpu.userAgg" multiple="true" size="3"><option selected value="min">Min</option><option selected value="avg">Avg</option><option selected value="max">Max</option></select></pre></td>
+                    <td><pre><input type="checkbox" value="builtin:host.cpu.idle"><label>Host CPU Idle %</label></pre></td><td><pre><select id="builtin:host.cpu.idleAgg" multiple="true" size="3"><option selected value="min">Min</option><option selected value="avg">Avg</option><option selected value="max">Max</option></select></pre></td>
+                    <td><pre><input type="checkbox" value="builtin:host.cpu.iowait"><label>Host CPU I/O Wait %</label></pre></td><td><pre><select id="builtin:host.cpu.iowaitAgg" multiple="true" size="3"><option selected value="min">Min</option><option selected value="avg">Avg</option><option selected value="max">Max</option></select></pre></td>
+                    <td><pre><input type="checkbox" value="builtin:host.cpu.other"><label>Host CPU Other %</label></pre></td><td><pre><select id="builtin:host.cpu.otherAgg" multiple="true" size="3"><option selected value="min">Min</option><option selected value="avg">Avg</option><option selected value="max">Max</option></select></pre></td>
+                    <td><pre><input type="checkbox" value="builtin:host.cpu.steal"><label>Host CPU Steal %</label></pre></td><td><pre><select id="builtin:host.cpu.stealAgg" multiple="true" size="3"><option selected value="min">Min</option><option selected value="avg">Avg</option><option selected value="max">Max</option></select></pre></td>
                 </tr>
             </table>
             <hr>
@@ -265,22 +274,25 @@
                     <td><pre>Use ctrl key to select multiple Aggregations. Min, Avg, Max Selected by Default.</pre></td>
                 </tr>
                 <tr>
-                    <td><pre>Tag(s)                : <input type="text" id="processTag"></pre></td>
+                    <td><pre>Process Tag(s)                     : <input type="text" id="processTag"></pre></td>
                 </tr>
                 <tr>
-                    <td><pre>Process Group Instance ID(s)    : <input type="text" id="processID"></pre></td>
+                    <td><pre>Process Group Instance ID(s)       : <input type="text" id="processID"></pre></td>
+                </tr>
+                <tr>
+                    <td><pre>Process Management Zone(s)         : <input type="text" id="processMgmtZoneName"></pre></td>
                 </tr>
             </table>
             <table id="processMetricList">
                 <tr>
-                    <td><pre><input type="checkbox" checked="true" value="com.dynatrace.builtin:pgi.cpu.usage"><label>Process CPU %</label></pre></td><td><pre><select id="com.dynatrace.builtin:pgi.cpu.usageAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
-                    <td><pre><input type="checkbox" checked="true" value="com.dynatrace.builtin:pgi.mem.usage"><label>Process Memory %</label></pre></td><td><pre><select id="com.dynatrace.builtin:pgi.mem.usageAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
-                    <td><pre><input type="checkbox" value="com.dynatrace.builtin:pgi.suspension"><label>GC Suspension Time</label></pre></td><td><pre><select id="com.dynatrace.builtin:pgi.suspensionAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
+                    <td><pre><input type="checkbox" checked="true" value="builtin:tech.generic.cpu.usage"><label>Process CPU %</label></pre></td><td><pre><select id="builtin:tech.generic.cpu.usageAgg" multiple="true" size="3"><option selected value="min">Min</option><option selected value="avg">Avg</option><option selected value="max">Max</option></select></pre></td>
+                    <td><pre><input type="checkbox" checked="true" value="builtin:tech.generic.mem.usage"><label>Process Memory %</label></pre></td><td><pre><select id="builtin:tech.generic.mem.usageAgg" multiple="true" size="3"><option selected value="min">Min</option><option selected value="avg">Avg</option><option selected value="max">Max</option></select></pre></td>
+                    <td><pre><input type="checkbox" value="builtin:tech.generic.cpu.suspensionTime"><label>GC Suspension Time</label></pre></td>
                 </tr>
                 <tr>
-                    <td><pre><input type="checkbox" value="com.dynatrace.builtin:pgi.jvm.garbagecollectioncount"><label>Java GC Count</label></pre></td><td><pre><select id="com.dynatrace.builtin:pgi.jvm.garbagecollectioncountAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
-                    <td><pre><input type="checkbox" value="com.dynatrace.builtin:pgi.jvm.garbagecollectiontime"><label>Java GC Time</label></pre></td><td><pre><select id="com.dynatrace.builtin:pgi.jvm.garbagecollectiontimeAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
-                    <td><pre><input type="checkbox" value="com.dynatrace.builtin:pgi.jvm.threadcount"><label>Java Thread Count</label></pre></td><td><pre><select id="com.dynatrace.builtin:pgi.jvm.threadcountAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
+                    <td><pre><input type="checkbox" value="builtin:tech.jvm.memory.pool.collectionCount"><label>Java GC Count</label></pre></td>
+                    <td><pre><input type="checkbox" value="builtin:tech.jvm.memory.pool.collectionTime"><label>Java GC Time</label></pre></td>
+                    <td><pre><input type="checkbox" value="builtin:tech.jvm.threads.count"><label>Java Thread Count</label></pre></td><td><pre><select id="builtin:tech.jvm.threads.countAgg" multiple="true" size="4"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option></select></pre></td>
                 </tr>
             </table>
             <hr>
@@ -297,20 +309,23 @@
                     <td><pre>Use ctrl key to select multiple Aggregations. Min, Avg, Max Selected by Default.</pre></td>
                 </tr>
                 <tr>
-                    <td><pre>Tag(s)        : <input type="text" id="serviceTag"></pre></td>
+                    <td><pre>Service Tag(s)                : <input type="text" id="serviceTag"></pre></td>
                 </tr>
                 <tr>
-                    <td><pre>Service ID(s)    : <input type="text" id="serviceID"></pre></td>
+                    <td><pre>Service ID(s)                 : <input type="text" id="serviceID"></pre></td>
+                </tr>
+                <tr>
+                    <td><pre>Service Management Zone(s)    : <input type="text" id="serviceMgmtZoneName"></pre></td>
                 </tr>
             </table>
             <table id="serviceMetricList">
                 <tr>
-                    <td><pre><input type="checkbox" checked="true" value="com.dynatrace.builtin:service.responsetime"><label>Response Time</label></pre></td><td><pre><select id="com.dynatrace.builtin:service.responsetimeAgg" multiple="true" size="5"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option><option value="MEDIAN">Median</option></select></pre></td>
-                    <td><pre><input type="checkbox" checked="true" value="com.dynatrace.builtin:service.requests"><label>Number of Requests</label></pre></td><td><pre><select id="com.dynatrace.builtin:service.requestsAgg"multiple="true" size="1"><option selected value="COUNT">Count</option></select></pre></td>
+                    <td><pre><input type="checkbox" checked="true" value="builtin:service.response.time"><label>Response Time</label></pre></td><td><pre><select id="builtin:service.response.timeAgg" multiple="true" size="5"><option selected value="MIN">Min</option><option selected value="AVG">Avg</option><option selected value="MAX">Max</option><option value="SUM">Sum</option><option value="MEDIAN">Median</option></select></pre></td>
+                    <td><pre><input type="checkbox" checked="true" value="builtin:service.requestCount.total"><label>Number of Requests</label></pre></td>
                 </tr>
                 <tr>
-                    <td><pre><input type="checkbox" value="com.dynatrace.builtin:service.errorcounthttp4xx"><label>Number of HTTP 4xx</label></pre></td><td><pre></pre></td>
-                    <td><pre><input type="checkbox" value="com.dynatrace.builtin:service.errorcounthttp5xx"><label>Number of HTTP 5xx</label></pre></td><td><pre></pre></td>
+                    <td><pre><input type="checkbox" value="builtin:service.errors.fourxx.count"><label>Number of HTTP 4xx</label></pre></td><td><pre></pre></td>
+                    <td><pre><input type="checkbox" value="builtin:service.errors.fivexx.count"><label>Number of HTTP 5xx</label></pre></td><td><pre></pre></td>
                 </tr>
             </table>
             <hr>
@@ -381,10 +396,10 @@
             </table>
             <table>
                 <tr>
-                    <td><pre><input type="checkbox" id="buildCharts" checked="true"><label>Build Charts?</label></pre></td>
+                    <td><pre><input type="checkbox" id="buildCharts"><label>Build Charts?</label></pre></td>
                 </tr>
             </table>
-            <table id="chartOptions">
+            <table id="chartOptions" class="hide">
                 <tr>
                     <td><pre>Hosts per Chart (Between 1 and 50): <input type="text" class="valid" id="hostEntitiesPerChart" value="25"></pre></td>
                     <td><pre>Processes per Chart (Between 1 and 50): <input type="text" class="valid" id="processEntitiesPerChart" value="25"></pre></td>
@@ -444,8 +459,8 @@
         var validEndSecond = false
         validEntitiesPerChart = true
 
-        var validTime = false
-        var useRelativeTime = false
+        var validTime = true
+        var useRelativeTime = true
         var allEntityIDNameArr = [] //used to capture all Entity ID & Names to create URLs for Report Info Section
 
         $('#buildCharts').on('click', function() {
@@ -460,82 +475,6 @@
               chartOptionsTable.setAttribute("class","hide");
             }
         });
-
-
-        //start entity id or entity tag input validation
-        // Either Entity ID or Tag value is allowed, not both
-        $('#hostTag').on('input', function() {
-            var inputHostTag=$(this);
-            var inputHostID = document.getElementById("hostID");
-            if (inputHostTag.val() != "") {
-                inputHostID.value = ""
-                inputHostID.setAttribute("disabled","true");
-            }
-            else {
-                inputHostID.removeAttribute("disabled");
-            }
-        });
-
-        $('#hostID').on('input', function() {
-            var inputHostID=$(this);
-            var inputHostTag = document.getElementById("hostTag");
-            if (inputHostID.val() != "") {
-                inputHostTag.value = ""
-                inputHostTag.setAttribute("disabled","true");
-            }
-            else {
-                inputHostTag.removeAttribute("disabled");
-            }
-        });
-
-        $('#processTag').ready(function(){
-            var inputProcessTag=$(this);
-            var inputProcessID = document.getElementById("processID");
-            if (inputProcessTag.val() != "") {
-                inputProcessID.value = ""
-                inputProcessID.setAttribute("disabled","true");
-            }
-            else {
-                inputProcessID.removeAttribute("disabled");
-            }
-        });
-
-        $('#processID').on('input', function() {
-            var inputProcessID=$(this);
-            var inputProcessTag = document.getElementById("processTag");
-            if (inputProcessID.val() != "") {
-                inputProcessTag.value = ""
-                inputProcessTag.setAttribute("disabled","true");
-            }
-            else {
-                inputProcessTag.removeAttribute("disabled");
-            }
-        });
-
-        $('#serviceTag').on('input', function() {
-            var inputServiceTag=$(this);
-            var inputServiceID = document.getElementById("serviceID");
-            if (inputServiceTag.val() != "") {
-                inputServiceID.value = ""
-                inputServiceID.setAttribute("disabled","true");
-            }
-            else {
-                inputServiceID.removeAttribute("disabled");
-            }
-        });
-
-        $('#serviceID').on('input', function() {
-            var inputServiceID=$(this);
-            var inputServiceTag = document.getElementById("serviceTag");
-            if (inputServiceID.val() != "") {
-                inputServiceTag.value = ""
-                inputServiceTag.setAttribute("disabled","true");
-            }
-            else {
-                inputServiceTag.removeAttribute("disabled");
-            }
-        });
-        //End entity id or entity tag input validation
 
         //Start Show Metric Type Section
         $('#showHostMetricsSection').on('input', function() {
@@ -961,10 +900,13 @@
                 var inputTokenValue=$('#dynatraceToken').val();
                 var inputHostIDValue=$('#hostID').val();
                 var inputHostTagValue=$('#hostTag').val();
+                var inputHostMZNameValue=$('#hostMgmtZoneName').val();
                 var inputProcessIDValue=$('#processID').val();
                 var inputProcessTagValue=$('#processTag').val();
+                var inputProcessMZNameValue=$('#processMgmtZoneName').val();
                 var inputServiceIDValue=$('#serviceID').val();
                 var inputServiceTagValue=$('#serviceTag').val();
+                var inputServiceMZNameValue=$('#serviceMgmtZoneName').val();
                 var dataResolution=$('#dataResolution').val();
                 var relativeTime=$('#relativeTime').val();
 
@@ -991,19 +933,19 @@
                     if (collectHostMetrics == true) {
                         hostMetricsList = findMetrics("host");
                         //hostMetricsLabel.setAttribute("class","show");
-                        collectDataAndBuildCharts("host",inputURLValue,inputTokenValue,inputHostIDValue,inputHostTagValue,startTimeUTC,endTimeUTC,hostMetricsList,dataResolution, useRelativeTime, relativeTime)
+                        collectDataAndBuildCharts("host",inputURLValue,inputTokenValue,inputHostIDValue,inputHostTagValue,inputHostMZNameValue,startTimeUTC,endTimeUTC,hostMetricsList,dataResolution, useRelativeTime, relativeTime)
                     }
 
                     if (collectProcessMetrics == true) {
                         processMetricsList = findMetrics("process");
                         //processMetricsLabel.setAttribute("class","show");
-                        collectDataAndBuildCharts("process",inputURLValue,inputTokenValue,inputProcessIDValue,inputProcessTagValue,startTimeUTC,endTimeUTC,processMetricsList,dataResolution)
+                        collectDataAndBuildCharts("process",inputURLValue,inputTokenValue,inputProcessIDValue,inputProcessTagValue,inputProcessMZNameValue,startTimeUTC,endTimeUTC,processMetricsList,dataResolution, useRelativeTime, relativeTime)
                     }
 
                     if (collectServiceMetrics == true) {
                         serviceMetricsList = findMetrics("service");
                         //serviceMetricsLabel.setAttribute("class","show");
-                        collectDataAndBuildCharts("service",inputURLValue,inputTokenValue,inputServiceIDValue,inputServiceTagValue,startTimeUTC,endTimeUTC,serviceMetricsList,dataResolution)
+                        collectDataAndBuildCharts("service",inputURLValue,inputTokenValue,inputServiceIDValue,inputServiceTagValue, inputServiceMZNameValue,startTimeUTC,endTimeUTC,serviceMetricsList,dataResolution, useRelativeTime, relativeTime)
                     }
 
                     createReportInfo(inputURLValue,localDateTimeStart,startTimeUTC,localDateTimeEnd,endTimeUTC)
@@ -1119,21 +1061,28 @@
         }
 
         //Gather Metrics & Build out HTML tables for different Entity Types
-        function collectDataAndBuildCharts(entityType,dynatraceURL,token,entityTypeID,entityTypeTag,startTime,endTime,entityTypeMetricsList,dataResolution, useRelativeTime, relativeTime) {
+        function collectDataAndBuildCharts(entityType,dynatraceURL,token,entityTypeID,entityTypeTag,entityTypeMZName,startTime,endTime,entityTypeMetricsList,dataResolution, useRelativeTime, relativeTime) {
             console.log("Gathering " + entityType + " metrics ...")
 
             entityTypeMetricID = entityType + "Metrics"
             dvTable = document.getElementById(entityTypeMetricID);
+            var useAggregation = true;
 
             for (metricIDNum in entityTypeMetricsList) {
                 var dynatraceMetricID = entityTypeMetricsList[metricIDNum];
                 var dtURL = "";
                 switch (dynatraceMetricID) {
-                    case "com.dynatrace.builtin:service.errorcounthttp4xx":
-                    case "com.dynatrace.builtin:service.errorcounthttp5xx" :
+                    case "builtin:tech.generic.cpu.suspensionTime":
+                    case "builtin:tech.jvm.memory.pool.collectionCount":
+                    case "builtin:tech.jvm.memory.pool.collectionTime":
+                    case "builtin:service.requestCount.total":
+                    case "builtin:service.errors.fourxx.count":
+                    case "builtin:service.errors.fivexx.count":
                         dtURL += dynatraceURL + "/api/v2/metrics/query?metricSelector=" + dynatraceMetricID
+                        useAggregation = false;
                         break;
                     default :
+                        useAggregation = true;
                         var metricAgg = dynatraceMetricID + "Agg"
                         var aggregationSelection = document.getElementById(metricAgg);
                         var selectedAggList = aggregationSelection.selectedOptions //get Selected Options
@@ -1159,13 +1108,50 @@
                     dtURL += "&from=" + startTime + "&to=" + endTime
                 }
 
+                // entity filters for API call
+                var entityFilterList = ""
                 if (entityTypeID != "") {
-                    var entityIDList = "&entitySelector=entityId(" + entityTypeID + ")";
-                    dtURL += entityIDList;
+                    entityTypeIDList = entityTypeID.split(",")
+                    var entityIDString = 'entityId('
+                    for(var id=0; id<entityTypeIDList.length; id++){
+                        entityIDString += '"' + entityTypeIDList[id] + '",'
+                    }
+                    finalEntityIDString = entityIDString.slice(0,-1)
+                    finalEntityIDString += ')'
+                    entityFilterList += finalEntityIDString
                 }
-                else if (entityTypeTag != "") {
-                    var tagList = "&entitySelector=tag(" + entityTypeTag + ")"
-                    dtURL += tagList;
+                if (entityTypeTag != "") {
+                    entityTypeTagList = entityTypeTag.split(",")
+                    var entityTagString = 'tag('
+                    for(var tag=0; tag<entityTypeTagList.length; tag++){
+                        entityTagString += '"' + entityTypeTagList[tag] + '",'
+                    }
+                    finalEntityTagString = entityTagString.slice(0,-1)
+                    finalEntityTagString += ')'
+                    if (entityFilterList == "") {
+                        entityFilterList += finalEntityTagString
+                    }
+                    else {
+                        entityFilterList += "," + finalEntityTagString
+                    }
+                }
+                if (entityTypeMZName != "") {
+                    entityTypeMZNameList = entityTypeMZName.split(",")
+                    var entityMZNameString = 'mzName('
+                    for(var mzName = 0; mzName < entityTypeMZNameList.length; mzName++){
+                        entityMZNameString += '"' + entityTypeMZNameList[mzName] + '",'
+                    }
+                    finalEntityMZNameString = entityMZNameString.slice(0,-1)
+                    finalEntityMZNameString += ')'
+                    if (entityFilterList == "") {
+                        entityFilterList += finalEntityMZNameString
+                    }
+                    else {
+                        entityFilterList += "," + finalEntityMZNameString
+                    }
+                }
+                if (entityFilterList != ""){
+                    dtURL += "&entitySelector=" + entityFilterList
                 }
 
                 var mainMetricTable = document.createElement("table")
@@ -1173,11 +1159,11 @@
                 dvTable.appendChild(mainMetricTable);
 
                 console.log("Gathering data for metric ID : " + dynatraceMetricID);
-                gatherMetricsRequest(entityType,dtURL,token,dynatraceMetricID,mainMetricTable);
+                gatherMetricsRequest(entityType,dtURL,token,dynatraceMetricID,mainMetricTable, useAggregation);
             }
         }
 
-        function gatherMetricsRequest(entityType,fullDTURL,token,dynatraceMetricID,mainMetricTable) {
+        function gatherMetricsRequest(entityType,fullDTURL,token,dynatraceMetricID,mainMetricTable, useAggregation) {
             var entityKeys = []
             var settings = {
                 "async": false,
@@ -1201,7 +1187,12 @@
                     console.log("Building HTML Tables...")
                     var table = document.createElement("table")
                     table.border = "1";
-                    table.id = aggregationResponses[x]['metricId']
+                    if(useAggregation){
+                        table.id = aggregationResponses[x]['metricId'];
+                    }
+                    else {
+                        table.id = aggregationResponses[x]['metricId'] + ":noagg";
+                    }
 
                     var tblColumnCount = 2
                     var tblRow = table.insertRow(-1)

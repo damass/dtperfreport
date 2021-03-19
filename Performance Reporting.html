@@ -961,7 +961,7 @@
                         collectDataAndBuildCharts("service",inputURLValue,inputTokenValue,inputServiceIDValue,inputServiceTagValue, inputServiceMZNameValue,startTimeUTC,endTimeUTC,serviceMetricsList,dataResolution, useRelativeTime, relativeTime)
                     }
 
-                    createReportInfo(inputURLValue,localDateTimeStart,startTimeUTC,localDateTimeEnd,endTimeUTC)
+                    createReportInfo(inputURLValue,localDateTimeStart,startTimeUTC,localDateTimeEnd,endTimeUTC, useRelativeTime, relativeTime)
                     createExcelButton(collectHostMetrics,hostMetricsList,collectProcessMetrics,processMetricsList,collectServiceMetrics,serviceMetricsList)
 
                     if(document.getElementById("buildCharts").checked == false)
@@ -1334,7 +1334,7 @@
         }
 
         //Create Report Info Table w/ Start/End Times & Links
-        function createReportInfo (dynatraceURL,localDateTimeStart,startTimeUTC,localDateTimeEnd,endTimeUTC) {
+        function createReportInfo (dynatraceURL,localDateTimeStart,startTimeUTC,localDateTimeEnd,endTimeUTC, useRelativeTime, relativeTime) {
 
             var htmlReportInfoText = ""
 
@@ -1344,18 +1344,33 @@
             var table = document.createElement("table")
             table.id = "reportInfoTable"
             var tblRow = table.insertRow(-1)
-
-            var cell1 = tblRow.insertCell(-1);
-            cell1.innerHTML = "<pre>Start Time    :</pre>"
-            var cell2 = tblRow.insertCell(-1);
-            cell2.innerHTML = "<center><pre>" + localDateTimeStart + "</pre></center>"
-            tblRow = table.insertRow(-1)
-            var cell3 = tblRow.insertCell(-1);
-            cell3.innerHTML = "<pre>End Time    :</pre>"
-            var cell4 = tblRow.insertCell(-1);
-            cell4.innerHTML = "<center><pre>" + localDateTimeEnd + "</pre></center>"
-            tblRow = table.insertRow(-1)
-            tblRow = table.insertRow(-1)
+            if(!useRelativeTime){
+                var cell1 = tblRow.insertCell(-1);
+                cell1.innerHTML = "<pre>Start Time :</pre>"
+                var cell2 = tblRow.insertCell(-1);
+                cell2.innerHTML = "<center><pre>" + localDateTimeStart + "</pre></center>"
+                tblRow = table.insertRow(-1)
+                var cell3 = tblRow.insertCell(-1);
+                cell3.innerHTML = "<pre>End Time   :</pre>"
+                var cell4 = tblRow.insertCell(-1);
+                cell4.innerHTML = "<center><pre>" + localDateTimeEnd + "</pre></center>"
+                tblRow = table.insertRow(-1)
+                tblRow = table.insertRow(-1)
+            }
+            else {
+                startTime = relativeTime.split("-")
+                var cell1 = tblRow.insertCell(-1);
+                cell1.innerHTML = "<pre>Start Time :</pre>"
+                var cell2 = tblRow.insertCell(-1);
+                cell2.innerHTML = "<center><pre>" + startTime[1] + " Ago</pre></center>"
+                tblRow = table.insertRow(-1)
+                var cell3 = tblRow.insertCell(-1);
+                cell3.innerHTML = "<pre>End Time   :</pre>"
+                var cell4 = tblRow.insertCell(-1);
+                cell4.innerHTML = "<center><pre>Now</pre></center>"
+                tblRow = table.insertRow(-1)
+                tblRow = table.insertRow(-1)
+            }
 
 
             let allEntityIDNameArrSet = new Set(allEntityIDNameArr.map(JSON.stringify));

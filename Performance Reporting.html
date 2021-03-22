@@ -244,6 +244,19 @@
                 <tr>
                     <td><pre>Host Management Zone(s)    : <input type="text" id="hostMgmtZoneName" size=150></pre></td>
                 </tr>
+                <tr>
+                    <td><hr></td>
+                </tr>
+                <tr>
+                    <td><center><pre style="background-color: red; font-weight: bold;">Advanced - Leave Blank if unsure. See Documentation : <a href="-">Metric selector transformation</a></pre></center></td>
+                </tr>
+                <tr>
+                    <td><pre>Host Metric Transformation : <input type="text" id="hostMetricTransformation" size=150></pre></td>
+                </tr>
+                <tr>
+                    <td><hr></td>
+                </tr>
+            </table>
             <table id="hostMetricList">
                 <tr>
                     <td><pre><input type="checkbox" checked="true" value="builtin:host.mem.usage"><label>Host Memory Usage %</label></pre></td><td><pre><select id="builtin:host.mem.usageAgg" multiple="true" size="3"><option selected value="min">Min</option><option selected value="avg">Avg</option><option selected value="max">Max</option></select></pre></td>
@@ -284,6 +297,18 @@
                 <tr>
                     <td><pre>Process Management Zone(s)         : <input type="text" id="processMgmtZoneName" size=150></pre></td>
                 </tr>
+                <tr>
+                    <td><hr></td>
+                </tr>
+                <tr>
+                    <td><center><pre style="background-color: red; font-weight: bold;">Advanced - Leave Blank if unsure. See Documentation : <a href="-">Metric selector transformation</a></pre></center></td>
+                </tr>
+                <tr>
+                    <td><pre>Process Metric Transformation      : <input type="text" id="processMetricTransformation" size=150></pre></td>
+                </tr>
+                <tr>
+                    <td><hr></td>
+                </tr>
             </table>
             <table id="processMetricList">
                 <tr>
@@ -318,6 +343,15 @@
                 </tr>
                 <tr>
                     <td><pre>Service Management Zone(s)    : <input type="text" id="serviceMgmtZoneName" size=150></pre></td>
+                </tr>
+                <tr>
+                    <td><hr></td>
+                </tr>
+                <tr>
+                    <td><center><pre style="background-color: red; font-weight: bold;">Advanced - Leave Blank if unsure. See Documentation : <a href="-">Metric selector transformation</a></pre></center></td>
+                </tr>
+                <tr>
+                    <td><pre>Service Metric Transformation : <input type="text" id="serviceMetricTransformation" size=150></pre></td>
                 </tr>
             </table>
             <hr>
@@ -953,12 +987,15 @@
                 var inputHostIDValue=$('#hostID').val();
                 var inputHostTagValue=$('#hostTag').val();
                 var inputHostMZNameValue=$('#hostMgmtZoneName').val();
+                var inputHostMetricTransValue=$('#hostMetricTransformation').val();
                 var inputProcessIDValue=$('#processID').val();
                 var inputProcessTagValue=$('#processTag').val();
                 var inputProcessMZNameValue=$('#processMgmtZoneName').val();
+                var inputProcessMetricTransValue=$('#processMetricTransformation').val();
                 var inputServiceIDValue=$('#serviceID').val();
                 var inputServiceTagValue=$('#serviceTag').val();
                 var inputServiceMZNameValue=$('#serviceMgmtZoneName').val();
+                var inputServiceMetricTransValue=$('#serviceMetricTransformation').val();
                 var dataResolution=$('#dataResolution').val();
                 var relativeTime=$('#relativeTime').val();
 
@@ -985,19 +1022,19 @@
                     if (collectHostMetrics == true) {
                         hostMetricsList = findMetrics("host");
                         //hostMetricsLabel.setAttribute("class","show");
-                        collectDataAndBuildCharts("host",inputURLValue,inputTokenValue,inputHostIDValue,inputHostTagValue,inputHostMZNameValue,startTimeUTC,endTimeUTC,hostMetricsList,dataResolution, useRelativeTime, relativeTime, validDataResolution)
+                        collectDataAndBuildCharts("host",inputURLValue,inputTokenValue,inputHostIDValue,inputHostTagValue,inputHostMZNameValue,inputHostMetricTransValue,startTimeUTC,endTimeUTC,hostMetricsList,dataResolution, useRelativeTime, relativeTime, validDataResolution)
                     }
 
                     if (collectProcessMetrics == true) {
                         processMetricsList = findMetrics("process");
                         //processMetricsLabel.setAttribute("class","show");
-                        collectDataAndBuildCharts("process",inputURLValue,inputTokenValue,inputProcessIDValue,inputProcessTagValue,inputProcessMZNameValue,startTimeUTC,endTimeUTC,processMetricsList,dataResolution, useRelativeTime, relativeTime, validDataResolution)
+                        collectDataAndBuildCharts("process",inputURLValue,inputTokenValue,inputProcessIDValue,inputProcessTagValue,inputProcessMZNameValue,inputProcessMetricTransValue,startTimeUTC,endTimeUTC,processMetricsList,dataResolution, useRelativeTime, relativeTime, validDataResolution)
                     }
 
                     if (collectServiceMetrics == true) {
                         serviceMetricsList = findMetrics("service");
                         //serviceMetricsLabel.setAttribute("class","show");
-                        collectDataAndBuildCharts("service",inputURLValue,inputTokenValue,inputServiceIDValue,inputServiceTagValue, inputServiceMZNameValue,startTimeUTC,endTimeUTC,serviceMetricsList,dataResolution, useRelativeTime, relativeTime, validDataResolution)
+                        collectDataAndBuildCharts("service",inputURLValue,inputTokenValue,inputServiceIDValue,inputServiceTagValue,inputServiceMZNameValue,inputServiceMetricTransValue,startTimeUTC,endTimeUTC,serviceMetricsList,dataResolution, useRelativeTime, relativeTime, validDataResolution)
                     }
 
                     createReportInfo(inputURLValue,localDateTimeStart,startTimeUTC,localDateTimeEnd,endTimeUTC, useRelativeTime, relativeTime)
@@ -1113,7 +1150,7 @@
         }
 
         //Gather Metrics & Build out HTML tables for different Entity Types
-        function collectDataAndBuildCharts(entityType,dynatraceURL,token,entityTypeID,entityTypeTag,entityTypeMZName,startTime,endTime,entityTypeMetricsList,dataResolution, useRelativeTime, relativeTime, validDataResolution) {
+        function collectDataAndBuildCharts(entityType,dynatraceURL,token,entityTypeID,entityTypeTag,entityTypeMZName,entityTypeMetricTransValue,startTime,endTime,entityTypeMetricsList,dataResolution, useRelativeTime, relativeTime, validDataResolution) {
             console.log("Gathering " + entityType + " metrics ...")
 
             entityTypeMetricID = entityType + "Metrics"
@@ -1147,6 +1184,10 @@
                         aggregationURLPiece += ")"
                         dtURL += dynatraceURL + "/api/v2/metrics/query?metricSelector=" + dynatraceMetricID + aggregationURLPiece
                         break;
+                }
+
+                if (entityTypeMetricTransValue != "") {
+                    dtURL += entityTypeMetricTransValue.trim()
                 }
 
                 if (dataResolution != "" && validDataResolution) {
@@ -1240,10 +1281,24 @@
                     var table = document.createElement("table")
                     table.border = "1";
                     if(useAggregation){
-                        table.id = aggregationResponses[x]['metricId'];
+                        metricIDPieces = aggregationResponses[x]['metricId'].split(":")
+                        if (metricIDPieces.length >= 4) {
+                            metricID = metricIDPieces[0] + ":" + metricIDPieces[1] + ":" + metricIDPieces[2]
+                        }
+                        else {
+                            metricID = aggregationResponses[x]['metricId']
+                        }
+                        table.id = metricID;
                     }
                     else {
-                        table.id = aggregationResponses[x]['metricId'] + ":noagg";
+                        metricIDPieces = aggregationResponses[x]['metricId'].split(":")
+                        if (metricIDPieces.length >= 3) {
+                            metricID = metricIDPieces[0] + ":" + metricIDPieces[1] + ":noagg"
+                        }
+                        else {
+                            metricID = aggregationResponses[x]['metricId'] + ":noagg"
+                        }
+                        table.id = metricID;
                     }
 
                     var tblColumnCount = 2
@@ -1274,7 +1329,7 @@
                         completeEntityID = completeEntityID.slice(0,-1)
 
                         var headerCell1 = document.createElement("TH");
-                        headerCell1.innerHTML = "<pre>" + completeEntityID + " " + aggregationResponses[x]['metricId'] + "</pre>";
+                        headerCell1.innerHTML = "<pre>" + completeEntityID + " " + metricID + "</pre>";
                         // add header row with entity & metric info
                         tblRow.appendChild(headerCell1);
                         var headerCell2 = document.createElement("TH");

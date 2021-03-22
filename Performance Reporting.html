@@ -443,7 +443,7 @@
                     <td><pre><a href="https://www.dynatrace.com/support/help/shortlink/api-metrics-v2-get-datapoints#parameters" >"resolution" docs</a></pre></td>
                 </tr>
             </table>
-            <table id="buildChartsChkBox" class="hide">
+            <table id="buildChartsChkBox" class="show">
                 <tr>
                     <td><pre><input type="checkbox" id="buildCharts"><label>Build Charts?</label></pre></td>
                 </tr>
@@ -1309,10 +1309,10 @@
                     var tblColumnCount = 2
                     var tblRow = table.insertRow(-1)
 
-                    data = aggregationResponses[x]['data']
-                    for (var dataIndex = 0; dataIndex < data.length; dataIndex++) {
+                    apiData = aggregationResponses[x]['data']
+                    for (var dataIndex = 0; dataIndex < apiData.length; dataIndex++) {
                         completeEntityID = ""
-                        dimensionMap = data[dataIndex]['dimensionMap'];
+                        dimensionMap = apiData[dataIndex]['dimensionMap'];
                         dimensionKeys = Object.keys(dimensionMap)
                         for (var dimIndex = 0; dimIndex < dimensionKeys.length; dimIndex++) {
                             if(dimensionKeys[dimIndex].startsWith("dt.entity")){
@@ -1349,8 +1349,8 @@
                         headerCell4.innerHTML = "<pre>" + "Value" + "</pre>";
                         tblRow.appendChild(headerCell4);
                         // TODO Add data to table
-                        timestamps = data[dataIndex]['timestamps']
-                        values = data[dataIndex]['values']
+                        timestamps = apiData[dataIndex]['timestamps']
+                        values = apiData[dataIndex]['values']
 
                         for (var measurementIndex = 0; measurementIndex < timestamps.length; measurementIndex++) {
                             tblRow = table.insertRow(-1)
@@ -1385,6 +1385,98 @@
                     //Add new HTML Table to existing tables
                     metricTableCell = metricTableRow.insertCell(-1)
                     metricTableCell.innerHTML = table.outerHTML
+
+                    //build out charts with data from apiResponse
+                    var buildCharts = document.getElementById("buildCharts")
+                    if(buildCharts.checked == true){
+                        //set up new chartData DataTable for each entity
+                        var chartData = new google.visualization.DataTable();
+                        chartData.addColumn('string', 'Date');
+
+                        console.log("Entering Draw Chart Flow...")
+
+                        var entityPerChartCount = 0
+                        var totalEntityCount = 0
+                        var chartCount = 0
+
+                        for (var dataIndexChart = 0; dataIndexChart < apiData.length; dataIndexChart++) {
+                            completeEntityID = ""
+                            dimensionMap = apiData[dataIndexChart]['dimensionMap'];
+                            dimensionKeys = Object.keys(dimensionMap)
+                            for (var dimIndex = 0; dimIndex < dimensionKeys.length; dimIndex++) {
+                                if(dimensionKeys[dimIndex].startsWith("dt.entity")){
+                                    entityName = findDTEntityName(dimensionMap[dimensionKeys[dimIndex]],startTime,endTime,useRelativeTime,relativeTime)
+                                    completeEntityID = entityName + " - " + completeEntityID
+                                }
+                                else if (dimensionKeys[dimIndex] != "rx_pid") {
+                                    completeEntityID += dimensionMap[dimensionKeys[dimIndex]] + " - "
+                                }
+                            }
+                            completeEntityID = completeEntityID.slice(0,-1)
+                            entityPerChartCount++
+                            totalEntityCount++
+                            var chartName = metricID
+                            var chartColumnName = completeEntityID
+                            var chartNumber = x + 1
+
+                            timestamps = apiData[dataIndexChart]['timestamps']
+                            values = apiData[dataIndexChart]['values']
+
+                            colIndex = chartData.addColumn('number', chartColumnName);
+                            for (var measurementIndex = 0; measurementIndex < timestamps.length; measurementIndex++) {
+                                if (entityPerChartCount == 1) {
+                                    var dateTimeUTC = new Date(timestamps[measurementIndex]);
+                                    var localDateTime = dateTimeUTC.toLocaleString();
+                                    chartData.addRow([localDateTime,values[measurementIndex]]);
+                                }
+                                else {
+                                    rowInt = parseInt(measurementIndex) //make sure i is a integer (something weird with setCell method)
+                                    chartData.setCell(rowInt,colIndex,values[measurementIndex]);
+                                }
+                            }
+                            //Text Box Value determines how many Entities to put on each chart
+                            switch (entityType){
+                            case "host":
+                                var entitiesPerChartValue = document.getElementById('hostEntitiesPerChart').value
+                                break;
+                            case "process":
+                                var entitiesPerChartValue = document.getElementById('processEntitiesPerChart').value
+                                break;
+                            case "service":
+                                var entitiesPerChartValue = document.getElementById('serviceEntitiesPerChart').value
+                                break;
+                            }
+                            if (entityPerChartCount == entitiesPerChartValue || totalEntityCount == apiData.length){
+                                // After data is added to chartData Data Table, build new div to place chart
+                                // then drawChart
+                                chartCount++ // used to name each chart invidually
+                                chartName = chartName + " - "+chartCount
+                                reportDiv = document.getElementById("dataChart")
+                                reportDiv.innerHTML = reportDiv.innerHTML + "<div id=\"" + chartName + "\"></div>"
+                                console.log("Entering Draw Chart...")
+                                chartURI = drawChart(chartName,chartData);
+
+                                //Add download Link below Chart
+                                console.log("Adding Chart Link...")
+                                var newChart = document.getElementById(chartName)
+                                var data = chartURI.replace(/^data:image\/\w+;base64,/, "");
+                                var downloadLink = "data:application/octet-stream;base64," + data
+
+                                downloadLinkHTML = document.createElement('a');
+                                downloadLinkHTML.setAttribute("href",downloadLink)
+                                downloadLinkHTML.setAttribute("download",chartName+".png")
+                                downloadLinkHTML.setAttribute("style","color: white;")
+                                downloadLinkHTML.setAttribute("class","chartDownloadLink")
+                                downloadLinkHTML.innerHTML = "<center>Download Link</center>"
+                                newChart.appendChild(downloadLinkHTML)
+
+                                //start with next batch of entities
+                                var chartData = new google.visualization.DataTable();
+                                chartData.addColumn('string', 'date');
+                                entityPerChartCount = 0
+                            }
+                        }
+                    }
                 }
             });
 

@@ -1481,8 +1481,10 @@
             });
 
             request.fail(function (response, textStatus) {
+                var metricTableRow = mainMetricTable.insertRow(-1);
                 metricTableCell = metricTableRow.insertCell(-1)
-                metricTableCell.innerHTML = "<p><pre>Request Failed: " + textStatus + "</pre></p>"
+                metricTableCell.innerHTML = "<p><pre>Request Failed: " + textStatus + " : " + fullDTURL + "</pre></p>"
+                alert("Request Failed for :" + fullDTURL)
 
             });
             entityKeys = []
@@ -1640,6 +1642,8 @@
             //format metric list correctly for excel download
 
             var downloadButtonHTML = ""
+            var dynatraceMetricNameString = ""
+            var dynatraceMetricTableString = ""
 
             if(collectHostMetrics == true) {
                 var hostMetricsListTrimmed = []
@@ -1712,41 +1716,32 @@
                 }
             }
 
-            if (collectHostMetrics== true && collectProcessMetrics == true && collectServiceMetrics == true){
-                dynatraceMetricNameString = hostMetricsListTrimmed.join("','") + "','" + processMetricsListTrimmed.join("','")+ "','" + serviceMetricsListTrimmed.join("','");
-                dynatraceMetricTableString = collectedHostMetricsList.join("','") + "','" + collectedProcessMetricsList.join("','")+ "','" + collectedServiceMetricsList.join("','");
-                downloadButtonHTML += "<button onclick=\"tables2Excel(['reportInfoTable','"+dynatraceMetricTableString+"'],['Report_Info','"+dynatraceMetricNameString+"'])\">Download Raw Data to Excel</button>"
+            if (collectHostMetrics== true) {
+                dynatraceMetricNameString = hostMetricsListTrimmed.join("','");
+                dynatraceMetricTableString = collectedHostMetricsList.join("','");
             }
-            else if (collectHostMetrics== true && collectProcessMetrics == true && collectServiceMetrics == false){
-                dynatraceMetricNameString = hostMetricsListTrimmed.join("','") + "','" + processMetricsListTrimmed.join("','");
-                dynatraceMetricTableString = collectedHostMetricsList.join("','") + "','" + collectedProcessMetricsList.join("','");
-                downloadButtonHTML += "<button onclick=\"tables2Excel(['reportInfoTable','"+dynatraceMetricTableString+"'],['Report_Info','"+dynatraceMetricNameString+"'])\">Download Raw Data to Excel</button>"
+            if (collectProcessMetrics == true) {
+                if (dynatraceMetricNameString == "" && dynatraceMetricTableString == "") {
+                    dynatraceMetricNameString = processMetricsListTrimmed.join("','");
+                    dynatraceMetricTableString = collectedProcessMetricsList.join("','");
+                }
+                else {
+                    dynatraceMetricNameString +=  "','" + processMetricsListTrimmed.join("','");
+                    dynatraceMetricTableString += "','" + collectedProcessMetricsList.join("','");
+                }
             }
-            else if (collectHostMetrics== true && collectProcessMetrics == false && collectServiceMetrics == true){
-                dynatraceMetricNameString = hostMetricsListTrimmed.join("','") + "','" + serviceMetricsListTrimmed.join("','");
-                dynatraceMetricTableString = collectedHostMetricsList.join("','") + "','" + collectedServiceMetricsList.join("','");
-                downloadButtonHTML += "<button onclick=\"tables2Excel(['reportInfoTable','"+dynatraceMetricTableString+"'],['Report_Info','"+dynatraceMetricNameString+"'])\">Download Raw Data to Excel</button>"
+            if (collectServiceMetrics == true) {
+                if (dynatraceMetricNameString == "" && dynatraceMetricTableString == "") {
+                    dynatraceMetricNameString = serviceMetricsListTrimmed.join("','");
+                    dynatraceMetricTableString = collectedServiceMetricsList.join("','");
+                }
+                else {
+                    dynatraceMetricNameString +=  "','" + serviceMetricsListTrimmed.join("','");
+                    dynatraceMetricTableString += "','" + collectedServiceMetricsList.join("','");
+                }
             }
-            else if (collectHostMetrics== true && collectProcessMetrics == false && collectServiceMetrics == false) {
-                dynatraceMetricNameString = hostMetricsListTrimmed.join("','")
-                dynatraceMetricTableString = collectedHostMetricsList.join("','")
-                downloadButtonHTML += "<button onclick=\"tables2Excel(['reportInfoTable','"+dynatraceMetricTableString+"'],['Report_Info','"+dynatraceMetricNameString+"'])\">Download Raw Data to Excel</button>"
-            }
-            else if (collectHostMetrics== false && collectProcessMetrics == true && collectServiceMetrics == false) {
-                dynatraceMetricNameString = processMetricsListTrimmed.join("','");
-                dynatraceMetricTableString = collectedProcessMetricsList.join("','");
-                downloadButtonHTML += "<button onclick=\"tables2Excel(['reportInfoTable','"+dynatraceMetricTableString+"'],['Report_Info','"+dynatraceMetricNameString+"'])\">Download Raw Data to Excel</button>"
-            }
-            else if (collectHostMetrics== false && collectProcessMetrics == false && collectServiceMetrics == true) {
-                dynatraceMetricNameString = serviceMetricsListTrimmed.join("','");
-                dynatraceMetricTableString = collectedServiceMetricsList.join("','");
-                downloadButtonHTML += "<button onclick=\"tables2Excel(['reportInfoTable','"+dynatraceMetricTableString+"'],['Report_Info','"+dynatraceMetricNameString+"'])\">Download Raw Data to Excel</button>"
-            }
-            else if (collectHostMetrics== false && collectProcessMetrics == true && collectServiceMetrics == true) {
-                dynatraceMetricNameString = processMetricsListTrimmed.join("','") + "','" + serviceMetricsListTrimmed.join("','");
-                dynatraceMetricTableString = collectedProcessMetricsList.join("','") + "','" + collectedServiceMetricsList.join("','");
-                downloadButtonHTML += "<button onclick=\"tables2Excel(['reportInfoTable','"+dynatraceMetricTableString+"'],['Report_Info','"+dynatraceMetricNameString+"'])\">Download Raw Data to Excel</button>"
-            }
+
+            downloadButtonHTML += "<button onclick=\"tables2Excel(['reportInfoTable','"+dynatraceMetricTableString+"'],['Report_Info','"+dynatraceMetricNameString+"'])\">Download Raw Data to Excel</button>"
             document.getElementById("downloadButton").innerHTML = downloadButtonHTML;
         }
 

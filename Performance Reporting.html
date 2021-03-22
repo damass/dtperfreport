@@ -1017,7 +1017,7 @@
                 console.log("End Time   : " + localDateTimeEnd + " : " + endTimeUTC)
 
                 //check if timeframe is smaller than 6 months and not backwards or using relative time frame
-                if ((timeDelta > 0 && timeDelta <= 14342400000) || useRelativeTime) {
+                if ((timeDelta > 0) || useRelativeTime) {
 
                     if (collectHostMetrics == true) {
                         hostMetricsList = findMetrics("host");
@@ -1055,7 +1055,7 @@
                 }
                 else {
                     alert("Time Frame Not Right, Try Again by Refreshing the Page")
-                    console.log("Time Frame is either larger than ~5.5 Months or End Time is Before Start Time")
+                    console.log("End Time is Before Start Time")
                 }
             }
             else {
@@ -1250,6 +1250,15 @@
                 }
                 if (entityFilterList != ""){
                     dtURL += "&entitySelector=" + entityFilterList
+                    if(entityType == "host"){
+                        dtURL += ",type(\"HOST\")"
+                    }
+                    else if (entityType == "process"){
+                        dtURL += ",type(\"PROCESS_GROUP_INSTANCE\")"
+                    }
+                    else if (entityType == "service"){
+                        dtURL += ",type(\"SERVICE\")"
+                    }
                 }
 
                 var mainMetricTable = document.createElement("table")

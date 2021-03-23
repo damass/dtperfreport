@@ -629,16 +629,24 @@
                 normTimeSection.setAttribute("class","hide");
                 if(relTimeInput.val().startsWith("now-")) {
                     relTimeParts = relTimeInput.val().split("-")
-                    layout = relTimeParts[1].match(/\d+[mhdwMy]/g);
-                    if(layout){
+                    var startTime = new RegExp(/^\d+[mhdwMy]$/g);
+                    var offset = new RegExp(/^\d+[mhdwMy]\/[mhdwMy]$/g);
+                    if(startTime.test(relTimeParts[1])){
                         relTimeInput.removeClass("invalid").addClass("valid")
                         validTime = true
                         useRelativeTime = true
                     }
                     else {
-                        relTimeInput.removeClass("valid").addClass("invalid")
-                        validTime = false
-                        useRelativeTime = false
+                        if (offset.test(relTimeParts[1])) {
+                            relTimeInput.removeClass("invalid").addClass("valid")
+                            validTime = true
+                            useRelativeTime = true
+                        }
+                        else {
+                            relTimeInput.removeClass("valid").addClass("invalid")
+                            validTime = false
+                            useRelativeTime = false
+                        }
                     }
                 }
                 else{
@@ -653,8 +661,8 @@
                 dataResolutionInput.removeClass("invalid").removeClass("valid");
             }
             else {
-                layout = dataResolutionInput.val().match(/\d+[mhdwMy]/g);
-                if(layout){
+                var resolution = new RegExp(/^\d+[mhdwMy]$/g);
+                if(resolution.test(dataResolutionInput.val())){
                     dataResolutionInput.removeClass("invalid").addClass("valid");
                     validDataResolution = true;
                 }

@@ -661,8 +661,12 @@
                 dataResolutionInput.removeClass("invalid").removeClass("valid");
             }
             else {
-                var resolution = new RegExp(/^\d+[mhdwMy]$/g);
-                if(resolution.test(dataResolutionInput.val())){
+                var resolution = new RegExp(/^\d+[mhdwMy]?$/g);
+                if (dataResolutionInput.val() == "1") {
+                    dataResolutionInput.removeClass("valid").addClass("invalid");
+                    validDataResolution = false;
+                }
+                else if(resolution.test(dataResolutionInput.val()) || (dataResolutionInput.val() == "Inf")){
                     dataResolutionInput.removeClass("invalid").addClass("valid");
                     validDataResolution = true;
                 }

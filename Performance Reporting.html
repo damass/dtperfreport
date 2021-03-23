@@ -1682,7 +1682,13 @@
                     for (metric in collectedHostMetricsList) {
                         var metricName = collectedHostMetricsList[metric]
                         var splitMetricName = metricName.split(":");
-                        hostMetricsListTrimmed.push(splitMetricName[1]);
+                        if (splitMetricName[1].length > 31) {
+                            shortenMetricName = splitMetricName[1].substring(5,36)
+                        }
+                        else {
+                            shortenMetricName = splitMetricName[1]
+                        }
+                        hostMetricsListTrimmed.push(shortenMetricName);
                     }
                 }
             }
@@ -1706,7 +1712,13 @@
                     for (metric in collectedProcessMetricsList) {
                         var metricName = collectedProcessMetricsList[metric]
                         var splitMetricName = metricName.split(":");
-                        processMetricsListTrimmed.push(splitMetricName[1]);
+                        if (splitMetricName[1].length > 31) {
+                            shortenMetricName = splitMetricName[1].substring(5,36)
+                        }
+                        else {
+                            shortenMetricName = splitMetricName[1]
+                        }
+                        processMetricsListTrimmed.push(shortenMetricName);
                     }
                 }
             }
@@ -1729,7 +1741,13 @@
                     for (metric in collectedServiceMetricsList) {
                         var metricName = collectedServiceMetricsList[metric]
                         var splitMetricName = metricName.split(":");
-                        serviceMetricsListTrimmed.push(splitMetricName[1]);
+                        if (splitMetricName[1].length > 31) {
+                            shortenMetricName = splitMetricName[1].substring(7,38)
+                        }
+                        else {
+                            shortenMetricName = splitMetricName[1]
+                        }
+                        serviceMetricsListTrimmed.push(shortenMetricName);
                     }
                 }
             }

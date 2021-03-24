@@ -1199,6 +1199,10 @@
                         break;
                 }
 
+                // Make sure the entity names are included in the response
+                // https://www.dynatrace.com/support/help/shortlink/api-metrics-v2-selector#names-transformation
+                dtURL += ":names"
+
                 if (entityTypeMetricTransValue != "") {
                     if (entityTypeMetricTransValue.startsWith(":")) {
                         dtURL += entityTypeMetricTransValue.trim()
@@ -1334,12 +1338,15 @@
                     apiData = aggregationResponses[x]['data']
                     for (var dataIndex = 0; dataIndex < apiData.length; dataIndex++) {
                         completeEntityID = ""
+                        var entityName = ""
                         dimensionMap = apiData[dataIndex]['dimensionMap'];
                         dimensionKeys = Object.keys(dimensionMap)
                         for (var dimIndex = 0; dimIndex < dimensionKeys.length; dimIndex++) {
                             if(dimensionKeys[dimIndex].startsWith("dt.entity")){
-                                entityName = findDTEntityName(dimensionMap[dimensionKeys[dimIndex]],startTime,endTime,useRelativeTime,relativeTime)
-                                completeEntityID = entityName + " - " + completeEntityID
+                                if(dimensionKeys[dimIndex].endsWith(".name")) {
+                                    entityName = dimensionMap[dimensionKeys[dimIndex]]
+                                    completeEntityID = entityName + " - " + completeEntityID
+                                }
                                 if (dimensionMap[dimensionKeys[dimIndex]].startsWith("HOST") ||
                                     dimensionMap[dimensionKeys[dimIndex]].startsWith("SERVICE") ||
                                     dimensionMap[dimensionKeys[dimIndex]].startsWith("PROCESS_GROUP_INSTANCE")) {
@@ -1423,12 +1430,15 @@
 
                         for (var dataIndexChart = 0; dataIndexChart < apiData.length; dataIndexChart++) {
                             completeEntityID = ""
+                            var entityName = ""
                             dimensionMap = apiData[dataIndexChart]['dimensionMap'];
                             dimensionKeys = Object.keys(dimensionMap)
                             for (var dimIndex = 0; dimIndex < dimensionKeys.length; dimIndex++) {
                                 if(dimensionKeys[dimIndex].startsWith("dt.entity")){
-                                    entityName = findDTEntityName(dimensionMap[dimensionKeys[dimIndex]],startTime,endTime,useRelativeTime,relativeTime)
-                                    completeEntityID = entityName + " - " + completeEntityID
+                                    if(dimensionKeys[dimIndex].endsWith(".name")) {
+                                        entityName = dimensionMap[dimensionKeys[dimIndex]]
+                                        completeEntityID = entityName + " - " + completeEntityID
+                                    }
                                 }
                                 else if (dimensionKeys[dimIndex] != "rx_pid") {
                                     completeEntityID += dimensionMap[dimensionKeys[dimIndex]] + " - "
@@ -1510,43 +1520,6 @@
 
             });
             entityKeys = []
-        }
-
-        function findDTEntityName (entityID,startTime,endTime,useRelativeTime,relativeTime) {
-            name = entityID;
-            var inputURLValue=$('#dynatraceURL').val();
-            var inputTokenValue=$('#dynatraceToken').val();
-
-            dtEntityURL = inputURLValue + "/api/v2/entities/" + entityID
-            if (useRelativeTime){
-                dtEntityURL += "?from=" + relativeTime
-            }
-            else {
-                dtEntityURL += "?from=" + startTime + "&to=" + endTime
-            }
-
-            var settings = {
-                "async": false,
-                "crossDomain": true,
-                "url": dtEntityURL,
-                "method": "GET",
-                "headers": {
-                    "Authorization": "Api-Token " + inputTokenValue,
-                    "Content-Type": "application/json",
-                },
-                "processData": false,
-                "data": ""
-                }
-
-            var request = $.ajax(settings);
-            request.done(function (response) {
-                name = response['displayName']
-            });
-
-            request.fail(function (response, textStatus) {
-                console.log("Request to find Entity Name Failed")
-            });
-            return name;
         }
 
         //Create Report Info Table w/ Start/End Times & Links
